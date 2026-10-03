@@ -1,0 +1,443 @@
+/* Hero: azul profundo, texto a la izquierda y retrato con arco a la derecha.
+   Las animaciones son CSS puras (600–900 ms) y arrancan en el primer pintado; el contenido
+   existe desde el HTML prerenderizado y no depende de JavaScript. */
+.hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  padding-top: calc(var(--header-top) + var(--header-h) + clamp(1.75rem, 4vw, 4rem));
+  padding-bottom: clamp(3rem, 6vw, 5rem);
+  background:
+    radial-gradient(90% 70% at 88% 6%, rgb(46 84 122 / 0.55), transparent 62%),
+    radial-gradient(55% 45% at 0% 100%, rgb(198 154 73 / 0.09), transparent 70%),
+    var(--navy-900);
+}
+
+.hero__sentinel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 56px;
+  pointer-events: none;
+}
+
+.hero__backdrop {
+  position: absolute;
+  z-index: -1;
+  right: -46%;
+  bottom: -12%;
+  width: 150vw;
+  max-width: 980px;
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+
+.hero__orbits {
+  width: 100%;
+  height: 100%;
+}
+
+.hero__orbits circle {
+  stroke: rgb(198 154 73 / 0.16);
+  stroke-width: 1;
+}
+
+.hero__grid {
+  display: grid;
+  gap: clamp(2.75rem, 6vw, 4.5rem);
+  align-items: center;
+}
+
+/* ---------- Texto ---------- */
+.hero__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.4rem;
+  animation: hero-fade-up 0.6s var(--ease-out) both;
+}
+
+.hero__avatar {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  box-shadow: 0 0 0 1.5px rgb(198 154 73 / 0.65);
+}
+
+.hero__eyebrow-text {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-300);
+}
+
+.hero__name {
+  color: var(--white);
+}
+
+.hero__dot {
+  display: none;
+}
+
+.hero__title {
+  font-size: var(--title-xl);
+  max-width: 12em;
+  margin-bottom: 1.35rem;
+}
+
+.hero__line {
+  display: block;
+  overflow: hidden;
+  padding: 0 0.12em 0.08em 0;
+  margin-bottom: -0.08em;
+}
+
+.hero__line-inner {
+  display: block;
+  animation: hero-rise 0.75s var(--ease-out) 50ms both;
+}
+
+.hero__line--accent {
+  padding-bottom: 0.26em;
+}
+
+.hero__line--accent .hero__line-inner {
+  color: var(--gold-300);
+  animation-delay: 140ms;
+}
+
+.hero__underlined {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.hero__swash {
+  position: absolute;
+  left: 0.02em;
+  right: 0.1em;
+  bottom: -0.2em;
+  width: calc(100% - 0.12em);
+  height: 0.24em;
+  overflow: visible;
+}
+
+.hero__swash path {
+  fill: none;
+  stroke: var(--gold-500);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 340;
+  stroke-dashoffset: 340;
+  animation: swash-draw 0.45s var(--ease-soft) 450ms forwards;
+}
+
+.hero__lead {
+  max-width: 34rem;
+  animation: hero-fade-up 0.6s var(--ease-out) 200ms both;
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  animation: hero-fade-up 0.5s var(--ease-out) 150ms both;
+}
+
+.hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-top: 1.75rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: rgb(255 255 255 / 0.76);
+  animation: hero-fade-up 0.55s var(--ease-out) 320ms both;
+}
+
+.hero__meta li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hero__meta .icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: none;
+  color: var(--gold-400);
+}
+
+/* ---------- Retrato ---------- */
+.hero__visual {
+  position: relative;
+  justify-self: center;
+  width: min(100%, 420px);
+}
+
+.hero__portrait {
+  aspect-ratio: 4 / 4.6;
+  border-radius: 999px 999px 26px 26px;
+  box-shadow: var(--shadow-lg);
+  animation: hero-portrait 0.85s var(--ease-out) 50ms both;
+}
+
+.hero__frame {
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid rgb(198 154 73 / 0.55);
+  border-radius: 999px 999px 30px 30px;
+  translate: 14px 14px;
+  rotate: 2.5deg;
+  animation: hero-fade 0.8s var(--ease-out) 250ms both;
+  transition:
+    rotate 0.6s var(--ease-spring),
+    translate 0.6s var(--ease-spring);
+}
+
+@media (hover: hover) {
+  .hero__visual:hover .hero__frame {
+    rotate: 4deg;
+    translate: 18px 12px;
+  }
+
+  .hero__visual:hover .hero__card {
+    rotate: 0deg;
+    translate: 0 -4px;
+  }
+}
+
+.hero__card {
+  position: absolute;
+  z-index: 2;
+  border-radius: 16px;
+  background: var(--white);
+  color: var(--navy-900);
+  box-shadow: 0 18px 40px -16px rgb(10 29 48 / 0.55);
+  animation: hero-fade-up 0.5s var(--ease-out) 380ms both;
+  transition:
+    rotate 0.45s var(--ease-spring),
+    translate 0.45s var(--ease-spring),
+    box-shadow 0.3s var(--ease-out);
+  --focus: var(--gold-400);
+}
+
+.hero__card--name {
+  left: 0.75rem;
+  bottom: 1.25rem;
+  max-width: calc(100% - 1.5rem);
+  padding: 0.8rem 1.1rem;
+  rotate: -2.5deg;
+}
+
+.hero__card-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.125rem;
+  line-height: 1.2;
+}
+
+.hero__card-role {
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--slate-500);
+}
+
+.hero__card--call {
+  top: 1rem;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 1rem 0.5rem 0.5rem;
+  text-decoration: none;
+  rotate: 3deg;
+}
+
+.hero__card:focus-visible {
+  rotate: 0deg;
+  translate: 0 -4px;
+}
+
+.hero__call-icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--navy-900);
+  color: var(--gold-400);
+}
+
+.hero__call-icon .icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.hero__call-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-ink);
+}
+
+.hero__call-number {
+  display: block;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero__portrait .portrait__note {
+  bottom: 5.5rem;
+}
+
+/* ---------- Animaciones ---------- */
+@keyframes hero-rise {
+  from {
+    transform: translateY(108%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hero-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes hero-portrait {
+  from {
+    transform: scale(1.04);
+    clip-path: inset(6% 6% 6% 6% round 999px 999px 26px 26px);
+  }
+  to {
+    transform: none;
+    clip-path: inset(0 0 0 0 round 999px 999px 26px 26px);
+  }
+}
+
+@keyframes swash-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 479px) {
+  .hero__actions .btn {
+    flex: 1 1 100%;
+  }
+}
+
+@media (min-width: 640px) {
+  .hero__visual {
+    width: min(100%, 440px);
+  }
+
+  .hero__card--name {
+    left: -1.25rem;
+    bottom: 2.5rem;
+  }
+
+  .hero__card--call {
+    right: -1rem;
+    top: 16%;
+  }
+
+  .hero__backdrop {
+    right: -30%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero {
+    display: flex;
+    align-items: center;
+    min-height: min(100svh, 940px);
+  }
+
+  .hero__grid {
+    grid-template-columns: minmax(0, 1.22fr) minmax(0, 0.78fr);
+  }
+
+  .hero__avatar {
+    display: none;
+  }
+
+  .hero__eyebrow-text {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 0.55rem;
+  }
+
+  .hero__dot {
+    display: inline;
+  }
+
+  .hero__visual {
+    width: min(100%, 460px);
+    justify-self: end;
+    margin-right: 1.5rem;
+  }
+
+  .hero__portrait {
+    aspect-ratio: 4 / 5;
+  }
+
+  .hero__backdrop {
+    right: -18%;
+    bottom: auto;
+    top: 50%;
+    translate: 0 -50%;
+    width: 72vw;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 760px) {
+  .hero__visual {
+    width: min(100%, 400px);
+  }
+
+  .hero__title {
+    font-size: clamp(2.375rem, 1.5rem + 3.4vw, 4.25rem);
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .hero__title {
+    font-size: clamp(2rem, 1.4rem + 2.6vw, 2.75rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__swash path {
+    stroke-dashoffset: 0;
+  }
+}

@@ -1,0 +1,27 @@
+.mobile-cta {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  padding: 0.75rem var(--gutter) calc(0.75rem + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, rgb(255 255 255 / 0.98) 70%, rgb(255 255 255 / 0));
+  transform: translateY(110%);
+  transition: transform 0.35s var(--ease-out);
+  pointer-events: none;
+}
+
+.mobile-cta.is-visible {
+  transform: none;
+  pointer-events: auto;
+}
+
+.mobile-cta .btn {
+  box-shadow: none;
+}
+
+@media (min-width: 640px) {
+  .mobile-cta {
+    display: none;
+  }
+}

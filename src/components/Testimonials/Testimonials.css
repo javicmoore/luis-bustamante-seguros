@@ -1,0 +1,86 @@
+.testimonials {
+  background:
+    radial-gradient(60% 60% at 100% 100%, rgb(198 154 73 / 0.1), transparent 70%),
+    var(--navy-900);
+}
+
+.testimonials__head {
+  display: grid;
+  gap: 1rem;
+  max-width: 40rem;
+  margin-bottom: clamp(2rem, 4vw, 3.5rem);
+}
+
+.testimonials__list {
+  display: grid;
+  gap: 2rem;
+}
+
+.quote figure {
+  display: grid;
+  gap: 1.25rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgb(255 255 255 / 0.16);
+}
+
+.quote blockquote p {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: var(--text-lg);
+  line-height: 1.5;
+}
+
+.quote--feature blockquote p {
+  font-size: var(--title-sm);
+  line-height: 1.4;
+}
+
+.quote figcaption {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.quote__name {
+  font-weight: 700;
+}
+
+.quote__context {
+  font-size: 0.875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-400);
+}
+
+.testimonials__pending {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.testimonials__skeleton {
+  display: grid;
+  gap: 1rem;
+}
+
+.testimonials__skeleton span {
+  display: block;
+  height: 5.5rem;
+  border: 1px dashed rgb(255 255 255 / 0.25);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 0.04);
+}
+
+@media (min-width: 768px) {
+  .testimonials__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2.5rem 3rem;
+  }
+
+  .quote--feature {
+    grid-column: 1 / -1;
+  }
+
+  .testimonials__skeleton {
+    grid-template-columns: 2fr 1fr 1fr;
+  }
+}

@@ -1,0 +1,30 @@
+/* Dos familias autoalojadas (OFL), pesos limitados y precargados en el HTML.
+   font-display: optional evita el cambio visible de fuente: si el archivo no llega a tiempo,
+   la página conserva la fuente del sistema durante esa visita (sin saltos ni parpadeos). */
+@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/fraunces-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: optional;
+}
+
+@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/fraunces-500-italic.woff2') format('woff2');
+  font-weight: 500;
+  font-style: italic;
+  font-display: optional;
+}
+
+@font-face {
+  font-family: 'Manrope';
+  src: url('/fonts/manrope-var.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: optional;
+}
+
+/* Sin caras de respaldo con local(): con font-display: optional nunca hay intercambio de
+   fuente (sin salto de layout) y la búsqueda de fuentes locales encarecía ~30% el primer
+   layout en las mediciones (ver docs/QA-RENDIMIENTO.md). */

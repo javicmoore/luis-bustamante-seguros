@@ -1,0 +1,49 @@
+# Dependencias
+node_modules/
+
+# Builds
+dist
+.ssr-build
+*.local
+
+# Variables de entorno (nunca versionar secretos)
+.env
+.env.*
+!.env.example
+
+# Vercel (configuración local del proyecto y credenciales del CLI)
+.vercel/
+
+# Credenciales y llaves sueltas
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+service-account*.json
+
+# Originales pesados (fotos/video sin optimizar). Se publican solo las versiones procesadas.
+media-originales/
+
+# Pruebas y reportes
+test-results/
+playwright-report/
+blob-report/
+coverage/
+qa-output/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+npm-debug.log*
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.tmp
+.tmp-*
+
+# Build temporal de la verificación de hidratación
+.qa-hydration

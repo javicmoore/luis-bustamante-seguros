@@ -1,0 +1,166 @@
+/* Sobre Luis: retrato a la izquierda con desplazamiento vertical y texto a la derecha.
+   Composición distinta al hero: fondo claro, retrato rectangular y datos en lista. */
+.about {
+  overflow: hidden;
+  overflow: clip;
+  background: var(--mist);
+}
+
+.about__grid {
+  display: grid;
+  gap: clamp(2.5rem, 6vw, 5rem);
+  align-items: center;
+}
+
+.about__visual {
+  position: relative;
+  width: min(100%, 380px);
+  justify-self: center;
+}
+
+.about__accent {
+  position: absolute;
+  inset: 10% -0.6rem -0.6rem 12%;
+  border: 1px solid rgb(198 154 73 / 0.35);
+  border-radius: var(--radius-lg);
+  background: var(--gold-100);
+  rotate: -3deg;
+  transition: rotate 0.7s var(--ease-spring);
+}
+
+@media (hover: hover) {
+  .about__visual:hover .about__accent {
+    rotate: -5deg;
+  }
+}
+
+.about__portrait {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.about__caption {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--slate-500);
+}
+
+.about__caption-name {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.125rem;
+  color: var(--navy-900);
+}
+
+.about__copy .eyebrow {
+  margin-bottom: 1rem;
+}
+
+.about__intro {
+  margin-top: 1.5rem;
+  font-size: var(--text-lg);
+  line-height: 1.6;
+  color: var(--navy-900);
+  max-width: 36rem;
+}
+
+.about__approach {
+  margin-top: 1rem;
+  font-size: var(--text-md);
+  line-height: 1.7;
+  color: var(--slate-600);
+  max-width: 36rem;
+}
+
+.about__facts {
+  display: grid;
+  margin-top: 2rem;
+  border-top: 1px solid var(--slate-200);
+}
+
+.about__fact {
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 0.6fr) 1fr;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--slate-200);
+}
+
+.about__fact dt {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--slate-500);
+  padding-top: 0.15rem;
+}
+
+.about__fact dd {
+  font-weight: 600;
+}
+
+.about__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  margin-top: 2rem;
+}
+
+.about__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s var(--ease-out);
+}
+
+.about__link:hover {
+  border-bottom-color: var(--gold-500);
+}
+
+.about__link .icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  color: var(--gold-ink);
+}
+
+@media (max-width: 479px) {
+  .about__fact {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+
+  .about__actions .btn {
+    width: 100%;
+  }
+}
+
+@media (min-width: 960px) {
+  .about__grid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  }
+
+  .about__visual {
+    width: min(100%, 440px);
+    justify-self: start;
+    margin-top: -1.5rem;
+  }
+
+  .about__accent {
+    inset: 12% -10% -6% 14%;
+  }
+}

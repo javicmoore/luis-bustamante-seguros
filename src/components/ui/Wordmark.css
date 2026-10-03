@@ -1,0 +1,32 @@
+.wordmark {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
+  min-height: 44px;
+  color: inherit;
+  text-decoration: none;
+  line-height: 1;
+}
+
+.wordmark__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1875rem;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.wordmark__role {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  opacity: 0.72;
+  white-space: nowrap;
+}
+
+.wordmark__logo {
+  height: 40px;
+  width: auto;
+}

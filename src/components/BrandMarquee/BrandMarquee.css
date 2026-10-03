@@ -1,0 +1,151 @@
+/* Franja compacta de marcas: dos juegos idénticos que se desplazan -50% (loop sin saltos).
+   Cada juego mide al menos el ancho del viewport y reparte el espacio con space-around, de
+   modo que la separación en la unión entre juegos es igual a la del resto. */
+.brands {
+  --logo-h: 34px;
+  --gap: clamp(2.5rem, 5vw, 4.5rem);
+  position: relative;
+  padding-block: 1.5rem 1.75rem;
+  background: var(--white);
+  border-bottom: 1px solid var(--slate-150);
+}
+
+.brands__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.brands__title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--slate-500);
+}
+
+.brands__toggle {
+  flex: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0 0.85rem;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-pill);
+  background: var(--white);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--navy-900);
+  transition:
+    border-color 0.2s var(--ease-out),
+    background-color 0.2s var(--ease-out);
+}
+
+.brands__toggle:hover {
+  border-color: var(--navy-900);
+}
+
+.brands__toggle .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.brands__note {
+  margin-bottom: 1rem;
+}
+
+.brands__viewport {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+
+.brands__track {
+  display: flex;
+  width: max-content;
+  animation: brands-scroll var(--marquee-duration, 36s) linear infinite;
+}
+
+/* Pausa al pasar el cursor por la franja, con el foco en el bloque (mientras el visitante no
+   haya usado el botón) o de forma persistente con el botón. */
+.brands__viewport:hover .brands__track,
+.brands:not(.is-manual):focus-within .brands__track,
+.brands__viewport.is-paused .brands__track {
+  animation-play-state: paused;
+}
+
+.brands__set {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-around;
+  gap: var(--gap);
+  min-width: 100vw;
+  margin: 0;
+  padding: 0.25rem calc(var(--gap) / 2);
+  list-style: none;
+}
+
+.brands__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  flex: none;
+}
+
+/* Tamaño exacto en los atributos width/height (ver logoBox): sin deformar ni recortar. */
+.brands__logo {
+  flex: none;
+  max-width: none;
+}
+
+@keyframes brands-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@media (min-width: 768px) {
+  .brands {
+    --logo-h: 38px;
+    padding-block: 1.75rem 2rem;
+  }
+}
+
+/* Movimiento reducido: lista estática y legible; sin duplicados ni control de pausa. */
+@media (prefers-reduced-motion: reduce) {
+  .brands__track {
+    animation: none !important;
+    width: auto;
+    justify-content: center;
+  }
+
+  .brands__set {
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 1.25rem;
+    padding-inline: var(--gutter);
+  }
+
+  .brands__set[aria-hidden='true'] {
+    display: none;
+  }
+
+  .brands__toggle {
+    display: none;
+  }
+
+  .brands__viewport {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}

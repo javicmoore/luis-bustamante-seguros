@@ -1,0 +1,41 @@
+.portrait {
+  position: relative;
+  overflow: hidden;
+  background: var(--navy-800);
+  isolation: isolate;
+}
+
+.portrait__picture,
+.portrait__picture img,
+.portrait__art {
+  width: 100%;
+  height: 100%;
+}
+
+.portrait__picture img {
+  object-fit: cover;
+}
+
+.portrait img[data-focus='top'] {
+  object-position: 50% 0%;
+}
+
+.portrait img[data-focus='upper'] {
+  object-position: 50% 22%;
+}
+
+.portrait img[data-focus='center'] {
+  object-position: 50% 50%;
+}
+
+.portrait--avatar {
+  border-radius: 50%;
+}
+
+.portrait__note {
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 2;
+}

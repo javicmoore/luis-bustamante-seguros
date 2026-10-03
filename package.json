@@ -1,0 +1,47 @@
+{
+  "name": "luis-bustamante-landing",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Landing de captación para Luis Bustamante, agente de seguros y asesor financiero (Mexicali, B.C.).",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && vite build --ssr src/entry-server.jsx --outDir .ssr-build && node scripts/prerender.mjs",
+    "build:vercel": "node scripts/release-check.mjs --vercel && npm run build",
+    "preview": "vite preview",
+    "preview:demo": "node scripts/preview-demo.mjs",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "check:release": "node scripts/release-check.mjs",
+    "images": "node scripts/optimize-images.mjs",
+    "brand:assets": "node scripts/generate-brand-assets.mjs",
+    "qa:screens": "node scripts/qa/screens.mjs",
+    "qa:states": "node scripts/qa/states.mjs",
+    "qa:perf": "node scripts/qa/perf.mjs",
+    "qa:hydration": "node scripts/qa/hydration.mjs",
+    "logos": "node scripts/optimize-logos.mjs"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "fontkit": "^2.0.4",
+    "globals": "^17.13.0",
+    "sharp": "^0.35.5",
+    "twilio": "^6.1.2",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  }
+}

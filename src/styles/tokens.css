@@ -1,0 +1,94 @@
+/* Dirección visual: azul profundo como ancla, blancos limpios y dorado moderado en detalles.
+   Paleta propuesta (confirmar cuando exista logo original):
+   #102A43 azul marino · #FFFFFF blanco · #F5F7F9 niebla · #C69A49 dorado.
+   Contraste: dorado #C69A49 sobre azul = 5.6:1 (texto OK). Sobre blanco solo como detalle;
+   para texto dorado sobre claro se usa --gold-ink (#8C6A2E, 4.9:1). */
+:root {
+  --navy-950: #0a1d30;
+  --navy-900: #102a43;
+  --navy-850: #15324f;
+  --navy-800: #1b3a58;
+  --navy-700: #27496b;
+  --slate-600: #3e5874;
+  --slate-500: #486581;
+  --slate-400: #627d98;
+  --slate-300: #9fb3c8;
+  --slate-200: #d2dce6;
+  --slate-150: #e1e8ef;
+  --slate-100: #eaeff4;
+  --mist: #f5f7f9;
+  --white: #ffffff;
+
+  --gold-600: #a9802f;
+  --gold-500: #c69a49;
+  --gold-400: #d3ad66;
+  --gold-300: #e4c991;
+  --gold-100: #f6eedd;
+  --gold-ink: #8c6a2e;
+
+  --danger: #b42318;
+  --danger-bg: #fef3f2;
+  --danger-line: #f4c7c3;
+  --success: #17684d;
+  --success-bg: #ecf7f2;
+  --notice-bg: #fdf8ec;
+
+  --text: var(--navy-900);
+  --text-muted: var(--slate-500);
+  --surface: var(--white);
+  --focus: var(--navy-900);
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+
+  /* Escala fluida. El texto de lectura nunca baja de 16 px. */
+  --text-sm: 0.9375rem;
+  --text-base: 1rem;
+  --text-md: clamp(1.0625rem, 1.02rem + 0.2vw, 1.1875rem);
+  --text-lg: clamp(1.1875rem, 1.1rem + 0.4vw, 1.375rem);
+  --title-sm: clamp(1.375rem, 1.25rem + 0.6vw, 1.75rem);
+  --title-md: clamp(1.875rem, 1.55rem + 1.5vw, 2.875rem);
+  --title-lg: clamp(2.125rem, 1.6rem + 2.4vw, 3.5rem);
+  --title-xl: clamp(2.375rem, 1.3rem + 3.5vw, 4.5rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --section-y: clamp(4.5rem, 3rem + 6vw, 8.5rem);
+
+  --container: 1200px;
+  --container-wide: 1320px;
+  --gutter: clamp(1rem, 0.6rem + 2.2vw, 2.5rem);
+
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgb(16 42 67 / 0.06), 0 2px 8px rgb(16 42 67 / 0.05);
+  --shadow-md: 0 6px 18px rgb(16 42 67 / 0.08), 0 2px 6px rgb(16 42 67 / 0.05);
+  --shadow-lg: 0 24px 60px -18px rgb(10 29 48 / 0.35), 0 8px 20px -8px rgb(10 29 48 / 0.18);
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-soft: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  --header-h: 64px;
+  --header-top: 14px;
+  --mobile-bar-h: 0px;
+
+  color-scheme: light;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --header-h: 58px;
+    --header-top: 10px;
+  }
+}
