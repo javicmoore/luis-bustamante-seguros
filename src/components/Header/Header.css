@@ -3,7 +3,7 @@
    costosos durante el scroll en móviles modestos. */
 .site-header {
   position: fixed;
-  top: var(--header-top);
+  top: calc(var(--demo-h) + var(--header-top));
   left: 0;
   right: 0;
   z-index: 50;
@@ -193,7 +193,7 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 2rem;
-  padding: calc(var(--header-top) + var(--header-h) + 1.75rem) var(--gutter)
+  padding: calc(var(--demo-h) + var(--header-top) + var(--header-h) + 1.75rem) var(--gutter)
     calc(1.5rem + env(safe-area-inset-bottom));
   background:
     radial-gradient(120% 60% at 100% 0%, rgb(198 154 73 / 0.12), transparent 60%),

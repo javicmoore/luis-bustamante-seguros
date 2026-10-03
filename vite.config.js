@@ -16,6 +16,8 @@ export default defineConfig(({ mode }) => {
     define: {
       // Mismo valor en el build del cliente y en el prerender (evita diferencias al hidratar).
       'import.meta.env.VITE_BUILD_YEAR': JSON.stringify(String(new Date().getFullYear())),
+      // SITE_MODE=demo: despliegue de revisión. El formulario no envía nada y se avisa en pantalla.
+      'import.meta.env.VITE_SITE_DEMO': JSON.stringify(process.env.SITE_MODE === 'demo' ? 'true' : 'false'),
     },
     build: {
       // Sin data: URIs para mantener una CSP estricta (img-src 'self').

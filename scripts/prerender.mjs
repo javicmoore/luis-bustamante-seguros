@@ -26,7 +26,9 @@ const exists = (path) =>
     () => false,
   );
 
-const siteUrl = normalizeSiteUrl(process.env.SITE_URL);
+// SITE_MODE=demo: versión de revisión; no debe indexarse ni anunciar sitemap/canonical.
+const demo = process.env.SITE_MODE === 'demo';
+const siteUrl = demo ? null : normalizeSiteUrl(process.env.SITE_URL);
 const socialImagePath = '/og/og-default.png';
 const socialImage = (await exists(resolve(dist, socialImagePath.slice(1))))
   ? {
@@ -58,13 +60,17 @@ for (const { page, file } of pages) {
   // La CSP de producción no permite estilos inline: el HTML no debe contener atributos style.
   if (/\sstyle="/i.test(appHtml)) throw new Error(`[prerender] ${file} contiene atributos style inline`);
 
-  const html = template.replace('<!--app-html-->', appHtml).replace('<!--head-extra-->', head);
+  let html = template.replace('<!--app-html-->', appHtml).replace('<!--head-extra-->', head);
+  if (demo && !/name="robots"/.test(html)) {
+    html = html.replace('</head>', '  <meta name="robots" content="noindex, nofollow" />\n  </head>');
+  }
   if (!/name="robots" content="noindex/.test(html)) indexable.add(page);
   await writeFile(target, html);
   console.log(`[prerender] ${file} (${(Buffer.byteLength(html) / 1024).toFixed(1)} KB)`);
 }
 
-const robots = ['User-agent: *', 'Allow: /', 'Disallow: /api/'];
+const robots = demo ? ['User-agent: *', 'Disallow: /'] : ['User-agent: *', 'Allow: /', 'Disallow: /api/'];
+if (demo) console.log('[prerender] SITE_MODE=demo: noindex en todas las páginas y robots.txt con Disallow: /');
 if (siteUrl) robots.push('', `Sitemap: ${siteUrl}/sitemap.xml`);
 await writeFile(resolve(dist, 'robots.txt'), `${robots.join('\n')}\n`);
 

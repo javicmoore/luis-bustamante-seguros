@@ -294,3 +294,16 @@ describe('configuración y almacenamiento', () => {
     expect(all).toMatch(/lead_notification/);
   });
 });
+
+describe('modo de demostración (SITE_MODE=demo)', () => {
+  it('el endpoint no procesa, no guarda y no notifica', async () => {
+    const store = memoryStore();
+    const notifier = fakeNotifier();
+    const handle = createLeadsHandler({ env: devEnv({ SITE_MODE: 'demo' }), store, notifier });
+    const res = await handle(leadRequest(validLead()));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ ok: false, error: 'demo' });
+    expect(notifier.calls).toHaveLength(0);
+    expect(store._dump().size).toBe(0);
+  });
+});

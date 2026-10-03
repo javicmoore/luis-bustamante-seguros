@@ -79,6 +79,7 @@
   --ease-soft: cubic-bezier(0.33, 1, 0.68, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 
+  --demo-h: 0px;
   --header-h: 64px;
   --header-top: 14px;
   --mobile-bar-h: 0px;
@@ -90,5 +91,16 @@
   :root {
     --header-h: 58px;
     --header-top: 10px;
+  }
+}
+
+/* Franja de demostración: desplaza header, menú, hero y anclas. */
+:root:has(.demo-banner) {
+  --demo-h: 34px;
+}
+
+@media (max-width: 639px) {
+  :root:has(.demo-banner) {
+    --demo-h: 54px;
   }
 }

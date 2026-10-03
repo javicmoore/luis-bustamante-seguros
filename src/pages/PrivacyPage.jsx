@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { DemoBanner } from '../components/DemoBanner/DemoBanner.jsx';
 import { Header } from '../components/Header/Header.jsx';
 import { Footer } from '../components/Footer/Footer.jsx';
 import { PrivacyContent } from '../components/Privacy/PrivacyContent.jsx';
@@ -15,6 +16,7 @@ export function PrivacyPage() {
       <a className="skip-link" href="#main">
         Saltar al contenido
       </a>
+      <DemoBanner />
       <Header variant="page" />
       <main id="main" tabIndex={-1} className="page">
         <div className="container page__container">

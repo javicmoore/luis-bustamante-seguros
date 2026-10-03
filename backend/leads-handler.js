@@ -19,6 +19,9 @@ export function createLeadsHandler({ env = process.env, store: injectedStore, no
       return json(405, { ok: false, error: 'method_not_allowed' }, { Allow: 'POST' });
     }
 
+    // Despliegue de demostración: no se lee el cuerpo, no se guarda nada y no se notifica.
+    if (env.SITE_MODE === 'demo') return json(503, { ok: false, error: 'demo' });
+
     const config = resolveLeadConfig(env);
 
     // Defensa adicional (no es autenticación): solo el propio sitio envía el formulario.

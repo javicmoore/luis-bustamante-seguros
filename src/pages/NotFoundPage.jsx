@@ -1,10 +1,12 @@
 import { Header } from '../components/Header/Header.jsx';
+import { DemoBanner } from '../components/DemoBanner/DemoBanner.jsx';
 import { Footer } from '../components/Footer/Footer.jsx';
 import './pages.css';
 
 export function NotFoundPage() {
   return (
     <>
+      <DemoBanner />
       <Header variant="page" />
       <main id="main" tabIndex={-1} className="page page--center">
         <div className="container page__container">

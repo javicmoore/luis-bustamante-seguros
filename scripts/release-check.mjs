@@ -89,6 +89,9 @@ for (const item of launchChecklist.filter((c) => !c.done)) {
 if (!existsSync(resolve(pub, 'og/og-default.png'))) warnings.push('Falta la imagen social (public/og/og-default.png).');
 else warnings.push('Imagen social provisional (tipográfica): rehacerla con un retrato real de Luis.');
 
+if (env.SITE_MODE && env.SITE_MODE !== 'demo') blockers.push('SITE_MODE solo admite "demo" (o no definirla).');
+if (env.SITE_MODE === 'demo' && !vercelMode) blockers.push('SITE_MODE=demo está activo: el formulario no envía solicitudes.');
+
 // --- Configuración del servidor (solo nombres, nunca valores) -----------------
 const checkEnv = vercelMode || process.argv.includes('--env');
 if (checkEnv) {
@@ -141,6 +144,13 @@ if (blockers.length === 0) {
 }
 
 if (vercelMode) {
+  // Despliegue de demostración explícito: se publica para revisar el diseño, con el formulario
+  // desactivado en el navegador y en el servidor. No es el lanzamiento y no exime de los bloqueantes.
+  if (env.SITE_MODE === 'demo') {
+    console.log('SITE_MODE=demo: despliegue de DEMOSTRACIÓN (formulario desactivado, noindex). Se continúa.');
+    console.log('Para el lanzamiento real, eliminar SITE_MODE y resolver los bloqueantes.');
+    process.exit(0);
+  }
   if (production && env.RELEASE_CHECK !== 'warn') {
     console.error('Build de PRODUCCIÓN detenido: el sitio no está listo para recibir prospectos reales.');
     console.error('Resuelve los bloqueantes o, como decisión explícita, define RELEASE_CHECK=warn en Vercel.');

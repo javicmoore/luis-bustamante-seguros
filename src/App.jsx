@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { DemoBanner } from './components/DemoBanner/DemoBanner.jsx';
 import { Header } from './components/Header/Header.jsx';
 import { Hero } from './components/Hero/Hero.jsx';
 import { BrandMarquee } from './components/BrandMarquee/BrandMarquee.jsx';
@@ -27,6 +28,7 @@ export function App() {
       <a className="skip-link" href="#main">
         Saltar al contenido
       </a>
+      <DemoBanner />
       <Header variant="home" />
       <main id="main" tabIndex={-1}>
         <Hero />

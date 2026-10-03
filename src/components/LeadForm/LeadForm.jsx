@@ -4,6 +4,7 @@ import { site } from '../../content/site.js';
 import { media } from '../../content/media.js';
 import { LEAD_LIMITS, SAVINGS_OPTIONS, normalizeName, validateLead } from '../../../shared/lead-schema.js';
 import { track } from '../../lib/analytics.js';
+import { IS_DEMO } from '../../lib/siteMode.js';
 import { Icon } from '../ui/Icon.jsx';
 import { Portrait } from '../ui/Portrait.jsx';
 import { PrivacyDialog } from '../Privacy/PrivacyDialog.jsx';
@@ -157,6 +158,13 @@ export function LeadForm() {
       return;
     }
 
+    if (IS_DEMO) {
+      // Demostración: no hay petición al servidor, ni registro, ni aviso a Luis.
+      setStatus({ state: 'demo' });
+      requestAnimationFrame(() => resultRef.current?.focus());
+      return;
+    }
+
     track('lead_form_attempt');
     const payload = { ...values };
     const fingerprint = JSON.stringify([
@@ -222,7 +230,7 @@ export function LeadForm() {
   const describedBy = (field, extra) =>
     [extra, errorFor(field) ? `lead-${field}-error` : null].filter(Boolean).join(' ') || undefined;
 
-  const done = status.state === 'success' || status.state === 'pending';
+  const done = status.state === 'success' || status.state === 'pending' || status.state === 'demo';
 
   return (
     <section id="asesoria" className="section request on-dark" aria-labelledby="lead-title">
@@ -254,10 +262,20 @@ export function LeadForm() {
         <div className="request__card" data-reveal="" data-reveal-delay="1">
           {done ? (
             <div className="lead-result" ref={resultRef} tabIndex={-1} aria-labelledby="lead-result-title">
-              <span className={`lead-result__icon${status.state === 'pending' ? ' is-pending' : ''}`} aria-hidden="true">
-                <Icon name={status.state === 'pending' ? 'alert' : 'check'} />
+              <span className={`lead-result__icon${status.state !== 'success' ? ' is-pending' : ''}`} aria-hidden="true">
+                <Icon name={status.state === 'success' ? 'check' : 'alert'} />
               </span>
-              {status.state === 'success' ? (
+              {status.state === 'demo' ? (
+                <>
+                  <h3 id="lead-result-title" className="lead-result__title">
+                    Formulario de demostración: no se envió nada.
+                  </h3>
+                  <p className="lead-result__text">
+                    Esta versión sirve para revisar el diseño. Los datos no salieron de tu navegador y Luis no recibió
+                    ninguna solicitud.
+                  </p>
+                </>
+              ) : status.state === 'success' ? (
                 <>
                   <h3 id="lead-result-title" className="lead-result__title">
                     Tu solicitud fue recibida.
@@ -275,16 +293,22 @@ export function LeadForm() {
                   </p>
                 </>
               )}
-              <p className="lead-result__folio">
-                Folio <strong>{status.id}</strong>
-              </p>
+              {status.id ? (
+                <p className="lead-result__folio">
+                  Folio <strong>{status.id}</strong>
+                </p>
+              ) : null}
               {status.demo ? (
                 <p className="lead-result__demo" role="note">
                   Modo demostración: no se envió ningún mensaje real y la solicitud no se guardó de forma
                   permanente.
                 </p>
               ) : null}
-              <p className="lead-result__alt">Si necesitas algo antes, también puedes contactarlo:</p>
+              <p className="lead-result__alt">
+                {status.state === 'demo'
+                  ? 'Para contactar a Luis de verdad:'
+                  : 'Si necesitas algo antes, también puedes contactarlo:'}
+              </p>
               <DirectContact />
             </div>
           ) : (
@@ -481,6 +505,13 @@ export function LeadForm() {
                   </p>
                 ) : null}
               </div>
+
+              {IS_DEMO ? (
+                <p className="lead-result__demo lead-form__demo" role="note">
+                  Versión de demostración: el envío está desactivado. Puedes probar la validación, pero los datos no se
+                  envían ni se guardan.
+                </p>
+              ) : null}
 
               <div className="lead-form__privacy">
                 <Icon name="lock" />

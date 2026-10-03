@@ -18,6 +18,10 @@ test('botones dorados mates: sin sombra ni filtros en reposo, hover y active; fo
       return { shadow: s.boxShadow, filter: s.filter, bg: s.backgroundColor, pseudo: [before.content, after.content] };
     });
 
+  // Botón del header sobre el hero (dorado). Al desplazarse cambia a azul por diseño.
+  const header = page.locator('.site-header__cta');
+  expect(await look(header)).toMatchObject({ shadow: 'none', bg: GOLD });
+
   const hero = page.locator('#hero-actions .btn--gold');
   const rest = await look(hero);
   expect(rest).toMatchObject({ shadow: 'none', filter: 'none', bg: GOLD, pseudo: ['none', 'none'] });
@@ -29,9 +33,7 @@ test('botones dorados mates: sin sombra ni filtros en reposo, hover y active; fo
   expect((await look(hero)).shadow).toBe('none');
   await page.mouse.up();
 
-  const header = page.locator('.site-header__cta');
   expect((await look(header)).shadow).toBe('none');
-  expect((await look(header)).bg).toBe(GOLD);
 
   for (const el of await page.locator('.btn--gold').all()) expect((await look(el)).shadow).toBe('none');
 

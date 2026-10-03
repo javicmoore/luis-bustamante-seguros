@@ -128,7 +128,8 @@ borra un secreto que ya se haya versionado: si ocurre, rotarlo primero (ver `doc
 4. *Settings → Deployment Protection*: mantener protegidas las vistas previas.
 5. *Settings → Domains*: conectar el dominio definitivo y definir `SITE_URL=https://ese-dominio`.
 6. Desplegar. Mientras `npm run check:release` tenga bloqueantes, **el build de producción se detiene a
-   propósito**; las vistas previas sí se publican. Para forzar producción con pendientes (decisión explícita),
+   propósito**; las vistas previas sí se publican. Para publicar una **demo de revisión** (formulario
+   desactivado, aviso visible, `noindex`) definir `SITE_MODE=demo`: ver [`docs/DEMO.md`](docs/DEMO.md). Para forzar producción con pendientes (decisión explícita),
    definir `RELEASE_CHECK=warn`.
 7. Comprobar headers reales: `curl.exe -I https://dominio/`, `.../aviso-de-privacidad`, una ruta inexistente y
    `curl.exe -I -X POST https://dominio/api/leads`.

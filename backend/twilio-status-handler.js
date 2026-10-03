@@ -15,6 +15,8 @@ export function createTwilioStatusHandler({ env = process.env, store: injectedSt
   return async function handleStatus(request) {
     if (request.method !== 'POST') return json(405, { ok: false }, { Allow: 'POST' });
 
+    if (env.SITE_MODE === 'demo') return empty(503);
+
     const config = resolveStatusConfig(env);
     if (!config.ok) {
       logEvent('status_config_error', { problems: config.problems });
