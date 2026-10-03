@@ -76,7 +76,7 @@ docs/                Pendientes, WhatsApp/Twilio, seguridad y registro de QA
 ## Editar contenido
 
 - Textos: `src/content/copy.js`, `services.js`, `faq.js`. Los que Luis debe aprobar están en `review.js`.
-- Contacto e identidad: `src/content/site.js` (teléfono vigente 686 330 3727, Instagram).
+- Contacto e identidad: `src/content/site.js` (teléfono vigente 686 387 2193, Instagram).
 - Fotos: `npm run images -- media-originales/luis-hero.jpg --name luis-hero` (genera AVIF/WebP/JPG en
   `public/media/` sin metadatos) y pegar el resultado en `src/content/media.js`. Los originales van en
   `media-originales/`, que no se versiona ni se publica.

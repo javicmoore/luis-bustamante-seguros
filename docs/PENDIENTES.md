@@ -36,7 +36,7 @@ Listados en `src/content/review.js` (cambiar `status` a `'aprobado'` cuando Luis
   al enviar el formulario; revisión de seguros o ahorros que ya se tienen; información sugerida.
 
 Datos ya confirmados y usados: nombre, actividad, Mexicali, alcance nacional, teléfono/WhatsApp
-686 330 3727, Instagram, servicios y cotización/asesoría gratuitas.
+686 387 2193, Instagram, servicios y cotización/asesoría gratuitas.
 
 ## 4. Aviso de privacidad
 

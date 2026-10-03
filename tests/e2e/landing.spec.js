@@ -36,12 +36,12 @@ test.describe('estructura y contenido', () => {
     for (const path of ['/', '/aviso-de-privacidad']) {
       await open(page, path);
       const tels = await page.$$eval('a[href^="tel:"]', (as) => [...new Set(as.map((a) => a.getAttribute('href')))]);
-      expect(tels).toEqual(['tel:+526863303727']);
+      expect(tels).toEqual(['tel:+526863872193']);
       const wa = await page.$$eval('a[href*="wa.me"]', (as) => [...new Set(as.map((a) => a.getAttribute('href')))]);
-      expect(wa).toEqual(['https://wa.me/526863303727']);
+      expect(wa).toEqual(['https://wa.me/526863872193']);
       const text = await page.locator('body').innerText();
       const phones = text.match(/\b\d{3}\s?\d{3}\s?\d{4}\b/g) || [];
-      for (const phone of phones) expect(phone.replace(/\s/g, '')).toBe('6863303727');
+      for (const phone of phones) expect(phone.replace(/\s/g, '')).toBe('6863872193');
       await expect(page.locator('a[href="https://www.instagram.com/luisbustamante.seguros/"]').first()).toBeAttached();
     }
   });

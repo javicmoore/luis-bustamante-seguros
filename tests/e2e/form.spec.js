@@ -107,7 +107,7 @@ test.describe('formulario de asesoría', () => {
     await expect(alert).toBeVisible();
     await expect(alert).toHaveAttribute('role', 'alert');
     await expect(alert).toContainText('no pudo enviarse a Luis');
-    await expect(alert.locator('a[href="tel:+526863303727"]')).toBeVisible();
+    await expect(alert.locator('a[href="tel:+526863872193"]')).toBeVisible();
     await expect(page.locator('#lead-name')).toHaveValue(FAKE.name);
     await expect(page.locator('#lead-consent')).toBeChecked();
     await expect(page.locator('.lead-result')).toHaveCount(0);

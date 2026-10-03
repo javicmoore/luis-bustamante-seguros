@@ -13,14 +13,14 @@ export const site = {
   },
   scope: 'Asesoría para personas de todo México',
   phone: {
-    display: '686 330 3727',
-    e164: '+526863303727',
-    href: 'tel:+526863303727',
+    display: '686 387 2193',
+    e164: '+526863872193',
+    href: 'tel:+526863872193',
   },
   whatsapp: {
-    display: '686 330 3727',
+    display: '686 387 2193',
     // Enlace de contacto directo y voluntario (sin mensaje prellenado).
-    href: 'https://wa.me/526863303727',
+    href: 'https://wa.me/526863872193',
   },
   instagram: {
     handle: '@luisbustamante.seguros',

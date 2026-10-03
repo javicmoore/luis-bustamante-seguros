@@ -93,7 +93,7 @@ h1{font-family:F;font-weight:600;font-size:92px;line-height:1;letter-spacing:-.0
 <svg class="orbits" viewBox="0 0 800 800"><circle cx="400" cy="400" r="210"/><circle cx="400" cy="400" r="300"/><circle cx="400" cy="400" r="390"/></svg>
 <div class="wrap"><div><p class="eyebrow">Seguros y planeación patrimonial</p><h1>Luis Bustamante</h1>
 <p class="t">Protege lo que has construido. <em>Planea lo que viene.</em></p></div>
-<div class="meta"><span>Mexicali, B.C.</span><span>Asesoría en todo México</span><span>686 330 3727</span></div></div>
+<div class="meta"><span>Mexicali, B.C.</span><span>Asesoría en todo México</span><span>686 387 2193</span></div></div>
 </body></html>`;
 }
 
