@@ -1,7 +1,7 @@
 // Copias web de los logos de marcas a partir de assets-originales/logos-marcas (que no se modifican).
 // - Solo se recorta el margen transparente vacío; no se recolorea, deforma ni recorta la marca.
 // - SVG: se copia tal cual (se verifica que no tenga scripts ni referencias externas).
-// - Mapas de bits: WebP sin pérdida, a 2× del tamaño mostrado.
+// - Mapas de bits: WebP sin pérdida (más un PNG de respaldo), a ~3× del tamaño mostrado.
 // Uso: npm run logos   → imprime width/height para src/content/brands.js
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -38,5 +38,7 @@ for (const [id, file] of Object.entries(files)) {
     .resize({ height, withoutEnlargement: true })
     .webp({ lossless: true, effort: 6 })
     .toFile(resolve(OUT, `${id}.webp`));
-  console.log(`${id}: /brands/${id}.webp  width ${info.width} height ${info.height}  (${(info.size / 1024).toFixed(1)} KB)`);
+  // Respaldo PNG para navegadores sin WebP (iOS anterior a 14).
+  const png = await sharp(trimmed).resize({ height, withoutEnlargement: true }).png({ compressionLevel: 9, palette: false }).toFile(resolve(OUT, `${id}.png`));
+  console.log(`${id}: /brands/${id}.webp + .png  width ${info.width} height ${info.height}  (${(info.size / 1024).toFixed(1)} KB / ${(png.size / 1024).toFixed(1)} KB)`);
 }

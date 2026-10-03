@@ -70,15 +70,14 @@ function loadVercelHeaders() {
   }
 }
 
-function applyHeaders(rules, pathname, res, host = '') {
-  // En la red local (http://192.168…) upgrade-insecure-requests forzaría HTTPS y rompería la
-  // carga; solo se omite en este servidor local. En Vercel la directiva se mantiene.
-  const lan = !/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
+function applyHeaders(rules, pathname, res) {
+  // Este servidor local sirve por HTTP: upgrade-insecure-requests forzaría HTTPS (Safari/WebKit lo
+  // aplica incluso en 127.0.0.1) y nada cargaría. Solo se omite aquí; en Vercel se mantiene.
   for (const rule of rules) {
     if (rule.pattern.test(pathname)) {
       for (const { key, value } of rule.headers) {
         const finalValue =
-          lan && key === 'Content-Security-Policy' ? value.replace(/;\s*upgrade-insecure-requests/, '') : value;
+          key === 'Content-Security-Policy' ? value.replace(/;\s*upgrade-insecure-requests/, '') : value;
         res.setHeader(key, finalValue);
       }
     }
@@ -116,7 +115,7 @@ export function localServer() {
 
       server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url, 'http://localhost');
-        applyHeaders(rules, url.pathname, res, req.headers.host);
+        applyHeaders(rules, url.pathname, res);
         if (CLEAN_ROUTES[url.pathname]) req.url = CLEAN_ROUTES[url.pathname] + url.search;
         const file = apiFileFor(url.pathname);
         if (!file) return next();

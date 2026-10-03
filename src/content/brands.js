@@ -13,11 +13,11 @@ export const brandsSection = {
 
 export const brands = [
   { id: 'allianz', name: 'Allianz', confirmed: true, publish: true, logo: { src: '/brands/allianz.svg', width: 2500, height: 642, scale: 0.9 } },
-  { id: 'zurich', name: 'Zurich', confirmed: true, publish: true, logo: { src: '/brands/zurich.webp', width: 517, height: 120, scale: 0.9 } },
-  { id: 'skandia', name: 'Skandia', confirmed: true, publish: true, logo: { src: '/brands/skandia.webp', width: 703, height: 120, scale: 0.8 } },
-  { id: 'insignia-life', name: 'Insignia Life', confirmed: true, publish: true, logo: { src: '/brands/insignia-life.webp', width: 444, height: 120, scale: 1.1 } },
-  { id: 'la-latino', name: 'La Latino Seguros', confirmed: true, publish: true, logo: { src: '/brands/la-latino.webp', width: 234, height: 120, scale: 1.35 } },
-  { id: 'mapfre', name: 'MAPFRE', confirmed: true, publish: true, logo: { src: '/brands/mapfre.webp', width: 789, height: 120, scale: 1 } },
+  { id: 'zurich', name: 'Zurich', confirmed: true, publish: true, logo: { src: '/brands/zurich.webp', fallback: '/brands/zurich.png', width: 517, height: 120, scale: 0.9 } },
+  { id: 'skandia', name: 'Skandia', confirmed: true, publish: true, logo: { src: '/brands/skandia.webp', fallback: '/brands/skandia.png', width: 703, height: 120, scale: 0.8 } },
+  { id: 'insignia-life', name: 'Insignia Life', confirmed: true, publish: true, logo: { src: '/brands/insignia-life.webp', fallback: '/brands/insignia-life.png', width: 444, height: 120, scale: 1.1 } },
+  { id: 'la-latino', name: 'La Latino Seguros', confirmed: true, publish: true, logo: { src: '/brands/la-latino.webp', fallback: '/brands/la-latino.png', width: 234, height: 120, scale: 1.35 } },
+  { id: 'mapfre', name: 'MAPFRE', confirmed: true, publish: true, logo: { src: '/brands/mapfre.webp', fallback: '/brands/mapfre.png', width: 789, height: 120, scale: 1 } },
 ];
 
 export function getPublishableBrands(list = brands) {

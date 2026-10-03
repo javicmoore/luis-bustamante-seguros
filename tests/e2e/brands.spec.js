@@ -29,7 +29,7 @@ test.describe('carrusel de marcas (build de producción)', () => {
 
   test('pausa con foco, botón y cursor; reanuda', async ({ page }) => {
     await open(page, '/');
-    const track = page.locator('.brands__track');
+    const track = page.locator('.brands__set').first();
     await expect(track).toHaveCSS('animation-play-state', 'running');
     const toggle = page.getByRole('button', { name: 'Pausar el movimiento de las marcas' });
     await toggle.focus();
@@ -55,6 +55,10 @@ test.describe('carrusel de marcas (build de producción)', () => {
       }),
     );
     for (const diff of ratios) expect(diff).toBeLessThan(0.03);
+    // Los dos juegos avanzan con la misma animación y el mismo recorrido (-100 % de su ancho).
+    const anims = await page.$$eval('.brands__set', (els) => els.map((el) => { const s = getComputedStyle(el); return s.animationName + '|' + s.animationDuration; }));
+    expect(anims[0]).toBe(anims[1]);
+    expect(anims[0]).toContain('brands-scroll');
   });
 
   for (const width of [320, 375, 390]) {
@@ -68,13 +72,25 @@ test.describe('carrusel de marcas (build de producción)', () => {
 });
 
 test.describe('carrusel con movimiento reducido', () => {
-  test.use({ reducedMotion: 'reduce', viewport: { width: 375, height: 700 } });
-  test('lista estática, sin copias visibles ni control de pausa', async ({ page }) => {
-    await open(page, '/');
-    await expect(page.locator('.brands__track')).toHaveCSS('animation-name', 'none');
-    await expect(page.locator('.brands__set').nth(1)).toBeHidden();
-    await expect(page.locator('.brands__toggle')).toBeHidden();
-    for (const img of await page.locator('.brands__set').first().locator('img').all()) await expect(img).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
-  });
+  test.use({ reducedMotion: 'reduce' });
+  for (const width of [320, 375, 390, 1366]) {
+    test(`lista estática con los seis logos completos a ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await open(page, '/');
+      await expect(page.locator('.brands__set').first()).toHaveCSS('animation-name', 'none');
+      await expect(page.locator('.brands__set').nth(1)).toBeHidden();
+      await expect(page.locator('.brands__toggle')).toBeHidden();
+      const boxes = await page.locator('.brands__set').first().locator('img').evaluateAll((els) =>
+        els.map((el) => { const r = el.getBoundingClientRect(); return { l: r.left, r: r.right, w: r.width, ok: el.complete && el.naturalWidth > 0 }; }),
+      );
+      expect(boxes).toHaveLength(6);
+      for (const b of boxes) {
+        expect(b.ok).toBe(true);
+        expect(b.w).toBeGreaterThan(20);
+        expect(b.l).toBeGreaterThanOrEqual(0);
+        expect(b.r).toBeLessThanOrEqual(width);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+    });
+  }
 });

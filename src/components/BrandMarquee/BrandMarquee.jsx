@@ -24,10 +24,10 @@ export function logoBox(width, height, scale = 1) {
 function BrandLogo({ brand }) {
   if (brand.fixture) return <FixtureLogo brand={brand} box={logoBox(brand.w, brand.h)} />;
   const box = logoBox(brand.logo.width, brand.logo.height, brand.logo.scale);
-  return (
+  const img = (
     <img
-      className="brands__logo"
-      src={brand.logo.src}
+      className={brand.logo.fallback ? undefined : 'brands__logo'}
+      src={brand.logo.fallback || brand.logo.src}
       width={box.width}
       height={box.height}
       alt={brand.name}
@@ -37,6 +37,14 @@ function BrandLogo({ brand }) {
       fetchPriority="low"
       decoding="async"
     />
+  );
+  if (!brand.logo.fallback) return img;
+  // WebP con respaldo PNG para navegadores que no lo admiten (iOS anterior a 14).
+  return (
+    <picture className="brands__logo">
+      <source type="image/webp" srcSet={brand.logo.src} />
+      {img}
+    </picture>
   );
 }
 

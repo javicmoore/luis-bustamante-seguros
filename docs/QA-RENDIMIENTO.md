@@ -63,6 +63,19 @@ medir) con error de continuidad en el reinicio de 0.06 px y 0.01 px; la pausa ma
   cargan de inmediato con prioridad baja.
 - No probado en teléfono físico.
 
+## Carrusel en teléfono real (reporte del 3 de octubre)
+
+Reporte: en la demo, el carrusel no se veía en un teléfono real. No se reprodujo en emulación (Chromium ni
+WebKit, el motor de Safari), así que se corrigieron las causas probables que la emulación no detecta:
+- `mask-image` sobre contenido animado (fallo conocido de Safari en iOS) → reemplazado por degradados
+  superpuestos.
+- Capa animada de ~1,800 px de CSS (≈5,400 px a densidad 3) → ahora se anima cada juego por separado
+  (capas de la mitad de ancho; separación medida entre juegos: 0 px).
+- WebP sin respaldo (iOS < 14) → `<picture>` con PNG de respaldo.
+- Movimiento reducido: la lista estática no se acomodaba en varias líneas y recortaba logos → corregido;
+  prueba E2E que exige los seis logos completos dentro de la pantalla a 320/375/390/1366 px.
+Pendiente: confirmación en el teléfono real tras el despliegue.
+
 ## Problemas encontrados y corregidos
 
 1. **Hidratación fallida** (React #418): un `<div>` (avatar) dentro de un `<p>`. Corregido; script de
