@@ -163,7 +163,8 @@ aviso de privacidad.
 - Tipografía: Fraunces (títulos, 600 y 500 itálica) y Manrope (lectura, variable), autoalojadas (~66 KB),
   precargadas y con `font-display: optional` para que no haya cambios visibles de fuente.
 - Composiciones distintas por bloque: hero azul profundo con la foto de Luis en arco, gráficos financieros
-  discretos (barras, cuadrícula y línea ascendente con movimiento suave) y tarjetas flotantes inclinadas;
+  discretos (barras, cuadrícula y línea ascendente con movimiento suave) y tarjetas flotantes inclinadas en
+  escritorio (en móvil y tableta la foto queda limpia, con el nombre debajo como texto);
   simulador como instrumento (controles claros + resultados oscuros); formulario en tarjeta blanca sobre azul;
   beneficios como lista editorial numerada y servicios en mosaico de tarjetas ilustradas con ligera inclinación;
   Sobre Luis con retrato desplazado y datos en lista.

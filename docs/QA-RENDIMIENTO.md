@@ -100,6 +100,24 @@ Comprobado sobre el build de demostración (`SITE_MODE=demo`) con **emulación**
   aplica en un efecto).
 - En WebKit, como en Safari, un clic en un radio no lo enfoca; el foco tampoco pasa a la nueva pregunta.
 
+## Ajuste del 11 de octubre (2): hero y header en móvil
+
+Build de demostración, **emulación** en Chromium y WebKit a 320, 375, 390 y 414 px, con movimiento normal y
+reducido (16 combinaciones), con capturas de viewport al inicio y durante el scroll.
+
+- Retrato: sin tarjetas encima (la de llamada se oculta por debajo de 1024 px; el nombre y la especialidad
+  quedan debajo como texto); muestreo de puntos sobre la foto sin ningún elemento ajeno; marco y gráficos
+  atenuados.
+- Header: al desplazarse es una franja blanca opaca de borde a borde; la región del header es idéntica píxel
+  a píxel sobre el simulador, el formulario y la FAQ. Antes era 97 % opaca y el contenido se veía por el
+  hueco bajo el aviso. Cambia de estado a los 8 px de scroll, antes de que el contenido llegue debajo.
+- Aviso de demo: medía 63 px con 54 reservados; ahora 56/56 con 10 px de separación. Con texto al 150 % el
+  espacio reservado se ajusta a la altura real (84–107 px) y el botón de menú sigue visible.
+- Sin scroll horizontal; destinos del menú con el título debajo del header (en "Sobre Luis" a 320/375 px
+  el título queda bajo la foto de esa sección, que va primero en móvil; la sección empieza a la vista).
+- Escritorio (1024, 1366 y 1920 px): misma geometría y estilos calculados en 162 elementos del aviso, header
+  y hero, comparados contra el build anterior.
+
 ## Problemas encontrados y corregidos
 
 1. **Hidratación fallida** (React #418): un `<div>` (avatar) dentro de un `<p>`. Corregido; script de

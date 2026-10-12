@@ -104,6 +104,7 @@
 
 @media (max-width: 639px) {
   :root:has(.demo-banner) {
-    --demo-h: 54px;
+    /* Tres líneas de 0.75rem × 1.3 + relleno + borde (ver DemoBanner.css). */
+    --demo-h: 56px;
   }
 }

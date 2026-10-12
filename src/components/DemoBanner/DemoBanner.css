@@ -22,3 +22,13 @@
 .demo-banner strong {
   font-weight: 800;
 }
+
+/* Teléfonos: tamaño fijo para que el texto ocupe como máximo tres líneas dentro del espacio
+   reservado (--demo-h), sin invadir el header. */
+@media (max-width: 639px) {
+  .demo-banner {
+    padding-block: 0.25rem;
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+}

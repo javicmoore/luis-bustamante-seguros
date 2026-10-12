@@ -255,6 +255,10 @@
   width: min(100%, 420px);
 }
 
+.hero__figure {
+  position: relative;
+}
+
 .hero__portrait {
   aspect-ratio: 4 / 4.6;
   border-radius: 999px 999px 26px 26px;
@@ -460,6 +464,74 @@
     top: 16%;
   }
 
+}
+
+/* Móvil y tableta (una columna): foto limpia, sin tarjetas encima. La tarjeta de llamada se oculta
+   (el contacto sigue en el menú y en la barra inferior) y el nombre pasa a texto simple debajo del
+   retrato. Marco y gráficos más tenues para no competir con la foto. El escritorio no cambia. */
+@media (max-width: 1023px) {
+  .hero__card--call {
+    display: none;
+  }
+
+  .hero__card--name,
+  .hero__visual:hover .hero__card--name {
+    position: static;
+    max-width: none;
+    margin-top: 1.25rem;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: var(--white);
+    text-align: center;
+    rotate: none;
+    translate: none;
+  }
+
+  .hero__card-name {
+    font-size: 1.1875rem;
+  }
+
+  .hero__card-role {
+    margin-top: 0.2rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgb(255 255 255 / 0.72);
+  }
+
+  .hero__frame,
+  .hero__visual:hover .hero__frame {
+    border-color: rgb(200 128 64 / 0.26);
+    translate: 8px 8px;
+    rotate: 1.5deg;
+  }
+
+  .hero-graphics__line {
+    stroke: rgb(200 128 64 / 0.2);
+  }
+
+  .hero-graphics__arrow {
+    fill: rgb(200 128 64 / 0.2);
+  }
+
+  .hero-graphics__shadow-line {
+    stroke: rgb(152 152 144 / 0.07);
+  }
+
+  .hero-graphics__dots {
+    display: none;
+  }
+
+  .hero-graphics__bar {
+    fill: rgb(56 88 112 / 0.14);
+  }
+
+  /* El header pasa a franja blanca casi al empezar a desplazarse, antes de que el contenido
+     del hero llegue debajo de él (ver Header.css). */
+  .hero__sentinel {
+    height: 8px;
+  }
 }
 
 @media (min-width: 1024px) {

@@ -47,6 +47,62 @@
   --focus: var(--navy-900);
 }
 
+/* Móvil y tableta: al desplazarse, el header es una franja blanca opaca de borde a borde, desde
+   el aviso de demostración (o el borde superior) hasta su base, para que el contenido nunca se
+   vea a través ni alrededor de la cápsula. El cambio es inmediato: un fundido dejaría ver el
+   contenido mientras pasa por detrás. Logo, menú y foco no cambian. */
+@media (max-width: 1023px) {
+  .site-header::before {
+    content: '';
+    position: absolute;
+    top: calc(-1 * var(--header-top));
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-bottom: 1px solid rgb(16 42 67 / 0.08);
+    background: var(--white);
+    box-shadow: 0 10px 24px -18px rgb(10 29 48 / 0.45);
+    visibility: hidden;
+    /* Visible, también recibe los toques: nada oculto detrás se activa por accidente. */
+    pointer-events: auto;
+  }
+
+  .site-header.is-scrolled:not(.is-open)::before {
+    visibility: visible;
+  }
+
+  .site-header__bar {
+    transition: none;
+  }
+
+  .site-header.is-scrolled .site-header__bar {
+    background: var(--white);
+    border-color: transparent;
+    box-shadow: none;
+  }
+}
+
+/* Teléfonos con texto ampliado: el nombre se recorta con "…" antes que empujar el botón de menú
+   fuera de la pantalla. El relleno (compensado) evita cortar los trazos de la tipografía. */
+@media (max-width: 639px) {
+  .site-header__brand,
+  .site-header__brand .wordmark__text {
+    min-width: 0;
+  }
+
+  .site-header__brand .wordmark__name,
+  .site-header__brand .wordmark__role {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.15em 0.12em;
+    margin: -0.15em -0.12em;
+  }
+
+  .site-header__toggle {
+    flex: none;
+  }
+}
+
 .site-header.is-open .site-header__bar {
   background: transparent;
   border-color: rgb(255 255 255 / 0.14);

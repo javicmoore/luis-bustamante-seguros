@@ -86,14 +86,17 @@ export function Hero() {
         </div>
 
         <div className="hero__visual">
-          <div className="hero__frame" aria-hidden="true" />
-          <Portrait
-            image={media.heroPortrait}
-            variant="hero"
-            priority
-            sizes="(min-width: 1024px) 460px, (min-width: 640px) 440px, min(92vw, 420px)"
-            className="hero__portrait"
-          />
+          {/* El marco se ajusta a la foto; en móvil el nombre queda debajo, fuera de este bloque. */}
+          <div className="hero__figure">
+            <div className="hero__frame" aria-hidden="true" />
+            <Portrait
+              image={media.heroPortrait}
+              variant="hero"
+              priority
+              sizes="(min-width: 1024px) 460px, (min-width: 640px) 440px, min(92vw, 420px)"
+              className="hero__portrait"
+            />
+          </div>
           <div className="hero__card hero__card--name">
             <p className="hero__card-name">{site.name}</p>
             <p className="hero__card-role">{site.role}</p>

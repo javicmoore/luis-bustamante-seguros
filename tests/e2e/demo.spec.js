@@ -40,8 +40,41 @@ test.describe('despliegue de demostración', () => {
     expect(requests).toBe(0);
   });
 
+  test('en teléfonos el aviso cabe en su espacio y no tapa el header ni los destinos', async ({ page }) => {
+    for (const width of [320, 375, 390, 414]) {
+      await page.setViewportSize({ width, height: 740 });
+      await open(page, '/');
+      const m = await page.evaluate(() => {
+        const banner = document.querySelector('.demo-banner').getBoundingClientRect();
+        const bar = document.querySelector('.site-header__bar').getBoundingClientRect();
+        return {
+          banner: banner.height,
+          reserved: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--demo-h')),
+          gap: bar.top - banner.bottom,
+        };
+      });
+      expect(m.banner).toBeLessThanOrEqual(m.reserved + 0.5);
+      expect(m.gap).toBeGreaterThanOrEqual(0);
+      // Al desplazarse, la franja blanca empieza justo debajo del aviso (sin hueco por donde se vea el contenido).
+      await page.evaluate(() => window.scrollTo(0, document.getElementById('simulador').offsetTop + 120));
+      await expect(page.locator('.site-header')).toHaveClass(/is-scrolled/);
+      const below = await page.evaluate(() => {
+        const bottom = document.querySelector('.demo-banner').getBoundingClientRect().bottom;
+        return document.elementFromPoint(innerWidth / 2, bottom + 2)?.closest('.site-header') !== null;
+      });
+      expect(below).toBe(true);
+      // Destino de ancla: el título queda visible debajo del header.
+      await page.locator('.site-header__toggle').click();
+      await page.locator('#mobile-menu').getByRole('link', { name: /FAQ/ }).click();
+      await page.waitForTimeout(1300);
+      const title = await page.locator('#faq-title').boundingBox();
+      const bar = await page.locator('.site-header__bar').boundingBox();
+      expect(title.y).toBeGreaterThanOrEqual(bar.y + bar.height - 1);
+    }
+  });
+
   test('sin scroll horizontal en móvil con el aviso', async ({ page }) => {
-    for (const width of [320, 375, 390]) {
+    for (const width of [320, 375, 390, 414]) {
       await page.setViewportSize({ width, height: 700 });
       await open(page, '/');
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);

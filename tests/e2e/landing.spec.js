@@ -85,6 +85,68 @@ test.describe('layout responsivo', () => {
   }
 });
 
+test.describe('hero y header en móvil', () => {
+  for (const width of [320, 375, 390, 414]) {
+    test(`${width}px: foto limpia, nombre debajo y header opaco al desplazarse`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 740 });
+      await open(page, '/');
+      // Sin tarjetas sobre la foto: la de llamada se oculta y el nombre queda debajo como texto.
+      await expect(page.locator('.hero__card--call')).toBeHidden();
+      const caption = page.locator('.hero__card--name');
+      await expect(caption).toBeVisible();
+      await expect(caption).toContainText('Luis Bustamante');
+      await expect(caption).toContainText('Agente de seguros y asesor financiero');
+      const portrait = page.locator('.hero__portrait');
+      const [p, c] = [await portrait.boundingBox(), await caption.boundingBox()];
+      expect(c.y).toBeGreaterThanOrEqual(p.y + p.height - 0.5);
+
+      // Nada pintado encima del retrato (muestreo de puntos con el retrato a la vista).
+      await page.evaluate(() => {
+        const el = document.querySelector('.hero__portrait');
+        window.scrollTo(0, el.getBoundingClientRect().top + scrollY - 140);
+      });
+      await page.waitForTimeout(300);
+      const foreign = await page.evaluate(() => {
+        const b = document.querySelector('.hero__portrait').getBoundingClientRect();
+        const found = new Set();
+        for (let i = 1; i < 8; i += 1) {
+          for (let j = 1; j < 10; j += 1) {
+            const y = b.top + (b.height * j) / 10;
+            if (y < 0 || y > innerHeight) continue;
+            const hit = document.elementFromPoint(b.left + (b.width * i) / 8, y);
+            if (hit && !hit.closest('.hero__portrait') && !hit.matches('.hero__figure, .hero__frame')) found.add(hit.className);
+          }
+        }
+        return [...found];
+      });
+      expect(foreign).toEqual([]);
+
+      // Al desplazarse: franja blanca opaca de borde a borde.
+      await page.evaluate(() => window.scrollTo(0, document.getElementById('simulador').offsetTop + 120));
+      await expect(page.locator('.site-header')).toHaveClass(/is-scrolled/);
+      const surface = await page.evaluate(() => {
+        const header = document.querySelector('.site-header');
+        const band = getComputedStyle(header, '::before');
+        return {
+          bar: getComputedStyle(document.querySelector('.site-header__bar')).backgroundColor,
+          band: band.backgroundColor,
+          bandVisible: band.visibility,
+          edgeHit: document.elementFromPoint(2, 4)?.closest('.site-header') !== null,
+        };
+      });
+      expect(surface).toEqual({ bar: 'rgb(255, 255, 255)', band: 'rgb(255, 255, 255)', bandVisible: 'visible', edgeHit: true });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+    });
+  }
+
+  test('escritorio conserva las tarjetas flotantes del retrato', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 900 });
+    await open(page, '/');
+    await expect(page.locator('.hero__card--call')).toBeVisible();
+    expect(await page.locator('.hero__card--name').evaluate((el) => getComputedStyle(el).position)).toBe('absolute');
+  });
+});
+
 test.describe('header y navegación', () => {
   test('cambia de superficie al avanzar sin cambiar de altura', async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
