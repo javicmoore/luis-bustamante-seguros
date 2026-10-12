@@ -7,6 +7,7 @@ export const validLead = () => ({
   age: '34',
   phone: '686 000 1234',
   savings: 'si',
+  interest: 'ppr_retiro',
   consent: true,
   website: '',
 });

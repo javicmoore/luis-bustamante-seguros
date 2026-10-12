@@ -55,13 +55,13 @@ export function Portrait({ image, variant = 'hero', sizes, priority = false, cla
             <stop offset="1" stopColor="#0b2036" />
           </linearGradient>
           <linearGradient id={`${uid}-gold`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#ecd4a3" />
-            <stop offset="0.5" stopColor="#c69a49" />
-            <stop offset="1" stopColor="#9c7430" />
+            <stop offset="0" stopColor="#eec9a2" />
+            <stop offset="0.5" stopColor="#c88040" />
+            <stop offset="1" stopColor="#a5652d" />
           </linearGradient>
         </defs>
         <rect width="400" height="500" fill={`url(#${uid}-bg)`} />
-        <g fill="none" stroke="#c69a49" strokeWidth="1">
+        <g fill="none" stroke="#c88040" strokeWidth="1">
           <circle cx="330" cy="70" r="120" opacity="0.18" />
           <circle cx="330" cy="70" r="180" opacity="0.12" />
           <circle cx="330" cy="70" r="240" opacity="0.08" />
@@ -94,7 +94,7 @@ export function Portrait({ image, variant = 'hero', sizes, priority = false, cla
             >
               LB
             </text>
-            <line x1="170" y1="330" x2="230" y2="330" stroke="#c69a49" strokeWidth="1.5" opacity="0.7" />
+            <line x1="170" y1="330" x2="230" y2="330" stroke="#c88040" strokeWidth="1.5" opacity="0.7" />
           </>
         )}
       </svg>

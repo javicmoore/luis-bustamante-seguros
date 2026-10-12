@@ -22,12 +22,15 @@ export function RangeField({
   suffix,
   help,
   inputLabel,
+  minMessage,
 }) {
   const helpId = useId();
   const rangeRef = useRef(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
+  // Aviso mientras se escribe un valor por debajo del mínimo (no corrige cada pulsación).
+  const [hint, setHint] = useState('');
 
   // Relleno del riel vía CSSOM (sin estilos inline en el HTML: CSP estricta).
   useIsomorphicLayoutEffect(() => {
@@ -43,10 +46,17 @@ export function RangeField({
 
   const commitDraft = () => {
     setEditing(false);
+    setHint('');
     const parsed = parseDraft(draft);
     if (parsed === null) return;
     const bounded = clamp(parsed, min, max);
-    if (bounded !== parsed) setNote(`Ajustado al rango permitido: ${formatValue(min)} a ${formatValue(max)}.`);
+    if (bounded !== parsed) {
+      setNote(
+        parsed < min && minMessage
+          ? `${minMessage} Se ajustó a ${formatValue(min)}.`
+          : `Ajustado al rango permitido: ${formatValue(min)} a ${formatValue(max)}.`,
+      );
+    }
     onChange(bounded, 'input');
   };
 
@@ -80,6 +90,7 @@ export function RangeField({
             onChange={(event) => {
               setDraft(event.target.value);
               const parsed = parseDraft(event.target.value);
+              setHint(minMessage && parsed !== null && parsed < min ? minMessage : '');
               if (parsed !== null && parsed >= min && parsed <= max) onChange(parsed, 'input');
             }}
             onBlur={commitDraft}
@@ -116,7 +127,7 @@ export function RangeField({
         </p>
       ) : null}
       <p className="range-field__note" role="status">
-        {note}
+        {hint || note}
       </p>
     </div>
   );

@@ -4,6 +4,7 @@ import { site } from '../../content/site.js';
 import { FORM_ANCHOR, SIMULATOR_ANCHOR } from '../../content/navigation.js';
 import { Portrait } from '../ui/Portrait.jsx';
 import { Icon } from '../ui/Icon.jsx';
+import { HeroGraphics } from './HeroGraphics.jsx';
 import { goToSection } from '../../lib/scroll.js';
 import './Hero.css';
 
@@ -21,17 +22,13 @@ export function Hero() {
     <section id="inicio" className="hero on-dark" aria-labelledby="hero-title">
       <div id="scroll-sentinel" className="hero__sentinel" aria-hidden="true" />
       <div className="hero__backdrop" aria-hidden="true">
-        <svg className="hero__orbits" viewBox="0 0 800 800" fill="none">
-          <circle cx="400" cy="400" r="210" />
-          <circle cx="400" cy="400" r="300" />
-          <circle cx="400" cy="400" r="390" />
-        </svg>
+        <HeroGraphics />
       </div>
 
       <div className="container hero__grid">
         <div className="hero__copy">
           <div className="hero__eyebrow">
-            <Portrait image={media.heroPortrait} variant="avatar" className="hero__avatar" sizes="48px" />
+            <Portrait image={media.avatar} variant="avatar" className="hero__avatar" sizes="48px" />
             <span className="hero__eyebrow-text">
               <span className="hero__name">{heroCopy.eyebrowName}</span>
               <span className="hero__dot" aria-hidden="true">
@@ -94,9 +91,8 @@ export function Hero() {
             image={media.heroPortrait}
             variant="hero"
             priority
-            sizes="(min-width: 1024px) 460px, (min-width: 640px) 70vw, 92vw"
+            sizes="(min-width: 1024px) 460px, (min-width: 640px) 440px, min(92vw, 420px)"
             className="hero__portrait"
-            note="Retrato original de Luis (foto real, vertical, buena resolución)."
           />
           <div className="hero__card hero__card--name">
             <p className="hero__card-name">{site.name}</p>

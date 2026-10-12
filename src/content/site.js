@@ -28,9 +28,15 @@ export const site = {
   },
   // Anunciado en su perfil: cotización y asesoría gratuitas.
   freeQuote: true,
-  // Logo original pendiente. Cuando exista: { src, width, height, alt }.
-  // Mientras tanto se usa el nombre compuesto tipográficamente (no es un logotipo oficial).
-  logo: null,
+  // Logo original (assets-originales/Luis Bustamante Logo.png). Copias en public/brand/ con
+  // npm run luis:assets. El nombre del logo es azul muy oscuro: sobre fondos oscuros se usa el
+  // isotipo en una placa clara con el nombre en HTML, o el logo completo sobre fondo claro.
+  logo: {
+    full: { src: '/brand/logo.webp', fallback: '/brand/logo.png', width: 503, height: 300 },
+    isotype: { src: '/brand/isotipo.webp', fallback: '/brand/isotipo.png', width: 210, height: 192 },
+    alt: 'Luis Bustamante, agente de seguros',
+    tagline: 'Agente de seguros',
+  },
 };
 
 export const services = [

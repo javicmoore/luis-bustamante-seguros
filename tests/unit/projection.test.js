@@ -4,6 +4,7 @@ import {
   futureValue,
   monthlyRate,
   niceMax,
+  normalizeContribution,
   project,
   valuesAtYear,
 } from '../../src/components/Simulator/projection.js';
@@ -12,9 +13,9 @@ describe('simulador: convención de cálculo', () => {
   it('con tasa 0 el saldo es exactamente aportación × meses', () => {
     for (const [contribution, years] of [
       [3000, 15],
-      [250, 1],
+      [2000, 1],
       [50000, 40],
-      [1234, 7],
+      [2345, 7],
     ]) {
       const result = project({ contribution, years, rate: 0 });
       expect(result.scenario).toBe(contribution * years * 12);
@@ -23,8 +24,25 @@ describe('simulador: convención de cálculo', () => {
     }
   });
 
-  it('la tasa inicial del simulador es 0 %', () => {
-    expect(SIM_LIMITS.rate.initial).toBe(0);
+  it('valores iniciales: aportación de $3,000, tasa ilustrativa de 10 % (editable hasta 0 %)', () => {
+    expect(SIM_LIMITS.contribution.initial).toBe(3000);
+    expect(SIM_LIMITS.rate.initial).toBe(10);
+    expect(SIM_LIMITS.rate.min).toBe(0);
+  });
+
+  it('la aportación mínima de $2,000 se aplica también al cálculo', () => {
+    expect(SIM_LIMITS.contribution.min).toBe(2000);
+    expect(normalizeContribution(500)).toBe(2000);
+    expect(normalizeContribution(1999)).toBe(2000);
+    expect(normalizeContribution(2000)).toBe(2000);
+    expect(normalizeContribution(2750)).toBe(2750);
+    expect(normalizeContribution(999999)).toBe(SIM_LIMITS.contribution.max);
+    expect(normalizeContribution(Number.NaN)).toBe(2000);
+    const below = project({ contribution: 1000, years: 10, rate: 10 });
+    const atMin = project({ contribution: 2000, years: 10, rate: 10 });
+    expect(below.contributed).toBe(2000 * 120);
+    expect(below.scenario).toBe(atMin.scenario);
+    expect(valuesAtYear({ contribution: 0, rate: 10 }, 10).contributed).toBe(2000 * 120);
   });
 
   it('convierte la tasa anual efectiva a mensual: (1 + r)^(1/12) − 1', () => {
@@ -41,15 +59,14 @@ describe('simulador: convención de cálculo', () => {
     expect(futureValue(1000, 2, i)).toBeCloseTo(1000 * (1 + i) + 1000, 8);
     // 12 meses al 6 % anual efectivo.
     const i6 = monthlyRate(6);
-    const expected = 1000 * ((Math.pow(1 + i6, 12) - 1) / i6);
-    expect(project({ contribution: 1000, years: 1, rate: 6 }).scenario).toBeCloseTo(expected, 8);
+    const expected = 2000 * ((Math.pow(1 + i6, 12) - 1) / i6);
+    expect(project({ contribution: 2000, years: 1, rate: 6 }).scenario).toBeCloseTo(expected, 8);
   });
 
-  it('aportación cero produce cero en todos los puntos', () => {
-    const result = project({ contribution: 0, years: 20, rate: 8 });
-    expect(result.contributed).toBe(0);
-    expect(result.scenario).toBe(0);
-    expect(result.points.every((p) => p.contributed === 0 && p.scenario === 0)).toBe(true);
+  it('futureValue con aportación cero produce cero; el punto inicial del gráfico es 0', () => {
+    expect(futureValue(0, 240, monthlyRate(8))).toBe(0);
+    const result = project({ contribution: 3000, years: 20, rate: 8 });
+    expect(result.points[0]).toEqual({ month: 0, contributed: 0, scenario: 0 });
   });
 
   it('plazos límite (1 y 40 años) y tasa máxima no producen valores inválidos', () => {

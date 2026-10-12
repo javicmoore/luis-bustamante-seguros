@@ -271,7 +271,7 @@ a {
 .btn--gold:hover,
 .btn--gold:active {
   --btn-bg: var(--gold-500);
-  --btn-fg: var(--navy-950);
+  --btn-fg: var(--ink-deep);
   box-shadow: none;
   filter: none;
 }

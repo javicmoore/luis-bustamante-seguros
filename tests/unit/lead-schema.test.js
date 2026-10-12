@@ -1,7 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { normalizePhone, validateLead } from '../../shared/lead-schema.js';
+import {
+  ADVICE_INTERESTS,
+  INSURANCE_INTERESTS,
+  interestBranch,
+  interestOptionsFor,
+  leadHeadline,
+  normalizePhone,
+  validateLead,
+} from '../../shared/lead-schema.js';
 
-const valid = { name: 'Ana López', age: '34', phone: '686 000 1234', savings: 'si', consent: true, website: '' };
+const valid = {
+  name: 'Ana López',
+  age: '34',
+  phone: '686 000 1234',
+  savings: 'si',
+  interest: 'ppr_retiro',
+  consent: true,
+  website: '',
+};
 
 describe('validación de la solicitud', () => {
   it('acepta una solicitud válida y normaliza el teléfono', () => {
@@ -13,7 +29,8 @@ describe('validación de la solicitud', () => {
 
   it('una respuesta "No" o "No aplica" no bloquea la solicitud', () => {
     expect(validateLead({ ...valid, savings: 'no' }).ok).toBe(true);
-    expect(validateLead({ ...valid, savings: 'no_aplica' }).ok).toBe(true);
+    expect(validateLead({ ...valid, savings: 'no', interest: 'orientacion' }).ok).toBe(true);
+    expect(validateLead({ ...valid, savings: 'no_aplica', interest: 'gmm' }).ok).toBe(true);
   });
 
   it('exige consentimiento explícito (true), no valores "truthy"', () => {
@@ -69,6 +86,79 @@ describe('validación de la solicitud', () => {
     expect(validateLead('texto').ok).toBe(false);
     expect(validateLead({ ...valid, name: ['Ana'] }).errors.name).toBe('required');
     expect(validateLead({ ...valid, phone: 6860001234 }).errors.phone).toBe('required');
+  });
+});
+
+describe('interés del prospecto', () => {
+  it('"Busco un seguro / No aplica" → seguros; "Sí" y "No" → asesoría de ahorro', () => {
+    expect(interestBranch('no_aplica')).toBe('seguro');
+    expect(interestBranch('si')).toBe('ahorro');
+    expect(interestBranch('no')).toBe('ahorro');
+    expect(interestBranch('')).toBe(null);
+    expect(interestOptionsFor('no_aplica').map((o) => o.label)).toEqual([
+      'Gastos médicos mayores (GMM)',
+      'Auto',
+      'Auto turista',
+      'Hogar',
+      'Otro',
+    ]);
+    expect(interestOptionsFor('si').map((o) => o.label)).toEqual([
+      'PPR / retiro',
+      'Ahorro e inversión',
+      'Educación',
+      'Necesito orientación',
+    ]);
+    expect(interestOptionsFor('tal vez')).toEqual([]);
+  });
+
+  it('acepta cada combinación permitida', () => {
+    for (const { value } of INSURANCE_INTERESTS) {
+      expect(validateLead({ ...valid, savings: 'no_aplica', interest: value }).ok).toBe(true);
+    }
+    for (const savings of ['si', 'no']) {
+      for (const { value } of ADVICE_INTERESTS) {
+        const result = validateLead({ ...valid, savings, interest: value });
+        expect(result.ok).toBe(true);
+        expect(result.value.interest).toBe(value);
+      }
+    }
+  });
+
+  it('es obligatorio cuando hay respuesta de ahorro', () => {
+    for (const interest of [undefined, null, '']) {
+      expect(validateLead({ ...valid, interest }).errors.interest).toBe('required');
+    }
+    // Sin respuesta de ahorro solo se reporta ese error (la pregunta de interés aún no aparece).
+    const result = validateLead({ ...valid, savings: '', interest: '' });
+    expect(result.errors.savings).toBe('required');
+    expect(result.errors.interest).toBeUndefined();
+  });
+
+  it('rechaza combinaciones cruzadas entre ramas', () => {
+    expect(validateLead({ ...valid, savings: 'si', interest: 'gmm' }).errors.interest).toBe('incompatible');
+    expect(validateLead({ ...valid, savings: 'no', interest: 'auto' }).errors.interest).toBe('incompatible');
+    expect(validateLead({ ...valid, savings: 'no_aplica', interest: 'ppr_retiro' }).errors.interest).toBe(
+      'incompatible',
+    );
+  });
+
+  it('rechaza valores fuera de catálogo, tipos raros y llaves del prototipo', () => {
+    for (const interest of ['xyz', 'GMM', 'toString', '__proto__', 'constructor', ['gmm'], 1, true, { v: 'gmm' }]) {
+      expect(validateLead({ ...valid, savings: 'no_aplica', interest }).errors.interest).toBe('invalid');
+    }
+  });
+
+  it('el encabezado del aviso refleja el interés, sin inferir PPR por responder "Sí"', () => {
+    expect(leadHeadline('gmm')).toBe('Nuevo prospecto para GMM');
+    expect(leadHeadline('auto')).toBe('Nuevo prospecto para Auto');
+    expect(leadHeadline('auto_turista')).toBe('Nuevo prospecto para Auto turista');
+    expect(leadHeadline('hogar')).toBe('Nuevo prospecto para Hogar');
+    expect(leadHeadline('ppr_retiro')).toBe('Nuevo prospecto para PPR');
+    expect(leadHeadline('ahorro_inversion')).toBe('Nuevo prospecto para Ahorro e inversión');
+    expect(leadHeadline('educacion')).toBe('Nuevo prospecto para Educación');
+    expect(leadHeadline('orientacion')).toBe('Nuevo prospecto — Necesita orientación');
+    expect(leadHeadline('otro_seguro')).toBe('Nuevo prospecto — Otro seguro');
+    expect(leadHeadline('xyz')).toBe('Nuevo prospecto');
   });
 });
 

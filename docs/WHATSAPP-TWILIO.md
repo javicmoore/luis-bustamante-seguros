@@ -30,31 +30,66 @@ Template Builder, aprobación de plantillas de WhatsApp, callbacks de estado y s
 2. **Remitente de WhatsApp** registrado (WhatsApp Business vinculado a un Meta Business). Su número debe ser
    **distinto** del de Luis. El código lo valida.
 3. **Plantilla** en Content Template Builder, categoría sugerida *Utility* (WhatsApp puede reclasificarla).
-   Texto propuesto (variables numeradas; ninguna al inicio ni al final; nunca dos variables juntas):
+   Texto propuesto, versión 2 con el interés del prospecto (8 variables numeradas; ninguna al inicio ni al
+   final; nunca dos variables juntas):
 
    ```
-   Nueva solicitud de asesoría desde tu sitio web.
+   Nuevo prospecto {{1}}
 
-   Folio: {{1}}
-   Nombre: {{2}}
-   Edad: {{3}} años
-   Teléfono: {{4}}
-   ¿Puede destinar parte de sus ingresos a ahorro o retiro?: {{5}}
-   Recibida: {{6}}
+   Folio: {{2}}
+   Nombre: {{3}}
+   Edad: {{4}} años
+   Teléfono: {{5}}
+   Interés: {{6}}
+   ¿Puede destinar parte de sus ingresos a ahorro o retiro?: {{7}}
+   Recibida: {{8}}
 
    Este aviso se generó automáticamente desde el formulario de tu sitio.
    ```
 
-   Valores de ejemplo para la revisión (ficticios): `LB-7K3M9QX2`, `Ana López`, `34`, `+52 686 000 1234`,
-   `Sí`, `2 oct 2026, 21:15 (hora de Mexicali)`.
+   `{{1}}` completa el encabezado según el interés que eligió la persona (WhatsApp no admite una variable al
+   inicio del texto, por eso "Nuevo prospecto" es fijo):
+
+   | Interés elegido | Encabezado resultante | `{{6}}` Interés |
+   | --- | --- | --- |
+   | Gastos médicos mayores (GMM) | Nuevo prospecto para GMM | Gastos médicos mayores (GMM) |
+   | Auto | Nuevo prospecto para Auto | Auto |
+   | Auto turista | Nuevo prospecto para Auto turista | Auto turista |
+   | Hogar | Nuevo prospecto para Hogar | Hogar |
+   | Otro (seguro) | Nuevo prospecto — Otro seguro | Otro seguro |
+   | PPR / retiro | Nuevo prospecto para PPR | PPR / retiro |
+   | Ahorro e inversión | Nuevo prospecto para Ahorro e inversión | Ahorro e inversión |
+   | Educación | Nuevo prospecto para Educación | Educación |
+   | Necesito orientación | Nuevo prospecto — Necesita orientación | Necesita orientación |
+
+   El interés nunca se deduce: responder "Sí" a la pregunta de ahorro no implica PPR. El servidor solo acepta
+   las combinaciones permitidas ("Busco un seguro / No aplica" → seguros; "Sí" o "No" → asesoría de ahorro).
+
+   Valores de ejemplo para la revisión (ficticios): `para GMM`, `LB-7K3M9QX2`, `Ana López`, `34`,
+   `+52 686 000 1234`, `Gastos médicos mayores (GMM)`, `Busco un seguro / No aplica`,
+   `11 oct 2026, 11:30 (hora de Mexicali)`.
    La aprobación suele tardar minutos y puede llegar a 48 h. **No asumir que está aprobada** hasta verla con
    estado *Approved*. Si se rechaza, ajustar y reenviar con otro nombre.
+
+   **Estado (11 oct 2026): esta plantilla no se ha creado ni aprobado, y no se ha probado ningún envío.** Los
+   avisos se verificaron solo con pruebas automatizadas (`tests/unit/lead-message.test.js`,
+   `tests/unit/leads-handler.test.js`), sin contactar a Twilio.
+
+   Cambios respecto de la versión 1 (6 variables, encabezado fijo "Nueva solicitud de asesoría…"):
+   - Una plantilla aprobada no se edita: hay que **crear una nueva** (p. ej. `aviso_prospecto_v2`), esperar
+     su aprobación y poner su `HX…` en `TWILIO_CONTENT_SID`. Con el SID de la versión 1 el envío fallaría,
+     porque el código manda 8 variables.
+   - Riesgos de revisión de Meta: más variables por cantidad de texto fijo (si la rechazan por esa
+     proporción, agregar texto fijo, no quitar datos) y posible reclasificación de categoría. La variable del
+     encabezado admite valores cortos y previsibles (máx. 40 caracteres).
+   - `npm run check:release` mantiene como pendiente "Plantilla de WhatsApp de 8 variables…" hasta marcarla
+     en `src/content/launch.js` con evidencia.
 4. **Aceptación de Luis**: Luis debe aceptar recibir estas notificaciones del remitente (dejar constancia).
 5. **API Key** (tipo *Standard*): `SK…` + secreto. Se usa para crear mensajes.
 6. **Auth Token** de la cuenta: Twilio firma los callbacks con él. Si se rota, actualizarlo en Vercel.
 
-El orden de las variables lo fija `backend/lead-message.js` (`{{1}}`…`{{6}}`). Si cambian el texto de la
-plantilla, mantengan esa numeración. Los valores se limpian (sin saltos de línea, tabuladores ni espacios
+El orden de las variables lo fija `backend/lead-message.js` (`{{1}}`…`{{8}}`; `previewNotification()` arma
+el texto completo para pruebas). Si cambian el texto de la plantilla, mantengan esa numeración. Los valores se limpian (sin saltos de línea, tabuladores ni espacios
 repetidos), como exige WhatsApp.
 
 ### Formato del número de Luis

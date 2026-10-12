@@ -16,7 +16,23 @@ export function Footer({ variant = 'home' }) {
       <div className="container">
         <div className="site-footer__top">
           <div className="site-footer__brand">
-            <p className="site-footer__name">{site.name}</p>
+            {site.logo?.full ? (
+              <div className="site-footer__logo">
+                <picture>
+                  <source type="image/webp" srcSet={site.logo.full.src} />
+                  <img
+                    src={site.logo.full.fallback}
+                    width={site.logo.full.width}
+                    height={site.logo.full.height}
+                    alt={site.logo.alt}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </picture>
+              </div>
+            ) : (
+              <p className="site-footer__name">{site.name}</p>
+            )}
             <p className="site-footer__role">{site.role}</p>
             <p className="site-footer__tagline">{copy.tagline}</p>
           </div>

@@ -20,6 +20,19 @@
   letter-spacing: -0.02em;
 }
 
+/* Logo completo sobre panel blanco: su nombre es azul muy oscuro y no se leería sobre el fondo. */
+.site-footer__logo {
+  display: inline-block;
+  padding: 1rem 1.4rem;
+  border-radius: var(--radius-md);
+  background: var(--white);
+}
+
+.site-footer__logo img {
+  width: 210px;
+  height: auto;
+}
+
 .site-footer__role {
   margin-top: 0.75rem;
   font-size: 0.8125rem;

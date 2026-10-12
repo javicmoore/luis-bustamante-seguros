@@ -5,9 +5,11 @@
 // Las cifras y el gráfico salen de esta misma función.
 
 export const SIM_LIMITS = Object.freeze({
-  contribution: { min: 0, max: 50000, step: 250, initial: 3000 },
+  // Mínimo de $2,000 MXN mensuales (indicación de Luis), aplicado también al cálculo.
+  contribution: { min: 2000, max: 50000, step: 250, initial: 3000 },
   years: { min: 1, max: 40, step: 1, initial: 15 },
-  rate: { min: 0, max: 12, step: 0.5, initial: 0 },
+  // Tasa inicial 10 % (rango sugerido por Luis: 10–12 %). Se puede bajar hasta 0 %.
+  rate: { min: 0, max: 12, step: 0.5, initial: 10 },
 });
 
 export function clamp(value, min, max) {
@@ -25,11 +27,18 @@ export function futureValue(monthlyContribution, months, rate) {
   return monthlyContribution * ((Math.pow(1 + rate, months) - 1) / rate);
 }
 
+/** Aportación válida para el cálculo: nunca por debajo del mínimo ni por encima del máximo. */
+export function normalizeContribution(value) {
+  const { min, max } = SIM_LIMITS.contribution;
+  return clamp(Number(value), min, max);
+}
+
 /**
  * @param {{ contribution: number, years: number, rate: number, samples?: number }} input
- *   rate en porcentaje anual efectivo (p. ej. 5 = 5 %).
+ *   rate en porcentaje anual efectivo (p. ej. 5 = 5 %). La aportación se normaliza al mínimo.
  */
-export function project({ contribution, years, rate, samples = 40 }) {
+export function project({ contribution: rawContribution, years, rate, samples = 40 }) {
+  const contribution = normalizeContribution(rawContribution);
   const months = Math.round(years * 12);
   const i = monthlyRate(rate);
   const points = [];
@@ -54,7 +63,8 @@ export function project({ contribution, years, rate, samples = 40 }) {
 }
 
 /** Valores al cierre de un año concreto (para la lectura del gráfico). */
-export function valuesAtYear({ contribution, rate }, year) {
+export function valuesAtYear({ contribution: rawContribution, rate }, year) {
+  const contribution = normalizeContribution(rawContribution);
   const months = Math.round(year * 12);
   return {
     contributed: contribution * months,

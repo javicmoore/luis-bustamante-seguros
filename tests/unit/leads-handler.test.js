@@ -31,17 +31,26 @@ describe('POST /api/leads — recepción correcta', () => {
 
     expect(notifier.calls).toHaveLength(1);
     const vars = notifier.calls[0].variables;
-    expect(Object.keys(vars)).toEqual(['1', '2', '3', '4', '5', '6']);
-    expect(vars[1]).toBe(body.id);
-    expect(vars[2]).toBe('Ana López');
-    expect(vars[3]).toBe('34');
-    expect(vars[4]).toBe('+52 686 000 1234');
-    expect(vars[5]).toBe('Sí');
-    expect(vars[6]).toMatch(/hora de Mexicali/);
+    expect(Object.keys(vars)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8']);
+    expect(vars[1]).toBe('para PPR');
+    expect(vars[2]).toBe(body.id);
+    expect(vars[3]).toBe('Ana López');
+    expect(vars[4]).toBe('34');
+    expect(vars[5]).toBe('+52 686 000 1234');
+    expect(vars[6]).toBe('PPR / retiro');
+    expect(vars[7]).toBe('Sí');
+    expect(vars[8]).toMatch(/hora de Mexicali/);
     for (const v of Object.values(vars)) expect(v).not.toMatch(/[\r\n\t]| {5,}/);
 
     const record = await store.hgetall(`lead:${body.id}`);
-    expect(record).toMatchObject({ name: 'Ana López', age: '34', phone: '+526860001234', savings: 'si', notify: 'accepted' });
+    expect(record).toMatchObject({
+      name: 'Ana López',
+      age: '34',
+      phone: '+526860001234',
+      savings: 'si',
+      interest: 'ppr_retiro',
+      notify: 'accepted',
+    });
     expect(record.consentAt).toBeTruthy();
   });
 
@@ -142,6 +151,23 @@ describe('validación y manipulación de campos', () => {
     const res = await handle(leadRequest({ ...validLead(), website: 'http://spam' }));
     expect(res.status).toBe(400);
     expect((await res.json()).ok).toBe(false);
+    expect(notifier.calls).toHaveLength(0);
+  });
+
+  it('interés ausente, fuera de catálogo o de otra rama → 400 sin notificar', async () => {
+    const { handle, notifier } = setup();
+    const cases = [
+      [{ interest: '' }, 'required'],
+      [{ interest: 'seguro_de_vida' }, 'invalid'],
+      [{ interest: ['gmm'] }, 'invalid'],
+      [{ savings: 'si', interest: 'gmm' }, 'incompatible'],
+      [{ savings: 'no_aplica', interest: 'educacion' }, 'incompatible'],
+    ];
+    for (const [c, code] of cases) {
+      const res = await handle(leadRequest({ ...validLead(), ...c }));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toMatchObject({ error: 'invalid', fields: { interest: code } });
+    }
     expect(notifier.calls).toHaveLength(0);
   });
 

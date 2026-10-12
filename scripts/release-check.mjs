@@ -37,8 +37,13 @@ for (const [key, label] of [
 }
 
 if (!site.logo) warnings.push('Logo original no entregado: se usa el nombre compuesto tipográficamente. Confirmar si existe logo.');
-else if (!publicFile(site.logo.src)) blockers.push(`Logo: no existe ${site.logo.src} en public/.`);
-else ok.push('Logo original.');
+else {
+  const missingLogo = [site.logo.full, site.logo.isotype]
+    .flatMap((variant) => (variant ? [variant.src, variant.fallback] : ['(variante no definida)']))
+    .filter((src) => !publicFile(src));
+  if (missingLogo.length) blockers.push(`Logo: no existe en public/: ${missingLogo.join(', ')}.`);
+  else ok.push('Logo original (completo e isotipo).');
+}
 
 const publishable = getPublishableBrands();
 if (publishable.length === 0) {
@@ -87,7 +92,7 @@ for (const item of launchChecklist.filter((c) => !c.done)) {
 }
 
 if (!existsSync(resolve(pub, 'og/og-default.png'))) warnings.push('Falta la imagen social (public/og/og-default.png).');
-else warnings.push('Imagen social provisional (tipográfica): rehacerla con un retrato real de Luis.');
+else ok.push('Imagen social con logo y retrato reales (npm run brand:assets).');
 
 if (env.SITE_MODE && env.SITE_MODE !== 'demo') blockers.push('SITE_MODE solo admite "demo" (o no definirla).');
 if (env.SITE_MODE === 'demo' && !vercelMode) blockers.push('SITE_MODE=demo está activo: el formulario no envía solicitudes.');

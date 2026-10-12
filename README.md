@@ -4,8 +4,8 @@ Sitio de captación para Luis Bustamante, agente de seguros y asesor financiero 
 para todo México. React 19 + Vite 8, HTML prerenderizado y funciones de Vercel para el formulario.
 
 > **Estado: versión de trabajo. No está lista para recibir prospectos reales.** El envío a WhatsApp funciona
-> solo con el proveedor simulado; faltan fotos, marcas confirmadas, video, testimonios, datos del aviso de
-> privacidad, dominio y la configuración de Twilio/Upstash. Ver [`docs/PENDIENTES.md`](docs/PENDIENTES.md) o
+> solo con el proveedor simulado; faltan video, testimonios, datos del aviso de privacidad, dominio, la
+> plantilla de WhatsApp con el interés del prospecto y la configuración de Twilio/Upstash. Ver [`docs/PENDIENTES.md`](docs/PENDIENTES.md) o
 > ejecutar `npm run check:release`.
 
 ## Qué incluye
@@ -68,7 +68,7 @@ src/content/         TODO el contenido editable: textos, contacto, marcas, medio
 src/components/      Componentes por bloque (cada uno con su CSS)
 src/styles/          Fuentes, tokens de diseño y estilos base
 scripts/             Prerender, revisión de lanzamiento, imágenes, servidor local y QA
-public/              Fuentes (OFL), favicon e imagen social provisional
+public/              Fuentes (OFL), logo (brand/), fotos (media/), logos de marcas, favicon e imagen social
 tests/unit, tests/e2e
 docs/                Pendientes, WhatsApp/Twilio, seguridad y registro de QA
 ```
@@ -77,13 +77,16 @@ docs/                Pendientes, WhatsApp/Twilio, seguridad y registro de QA
 
 - Textos: `src/content/copy.js`, `services.js`, `faq.js`. Los que Luis debe aprobar están en `review.js`.
 - Contacto e identidad: `src/content/site.js` (teléfono vigente 686 387 2193, Instagram).
-- Fotos: `npm run images -- media-originales/luis-hero.jpg --name luis-hero` (genera AVIF/WebP/JPG en
-  `public/media/` sin metadatos) y pegar el resultado en `src/content/media.js`. Los originales van en
-  `media-originales/`, que no se versiona ni se publica.
+- Fotos y logo de Luis: originales en `assets-originales/` (`luis-hero.png`, `luis.png`,
+  `Luis Bustamante Logo.png`), intactos. `npm run luis:assets` genera las versiones web en `public/media/`
+  y `public/brand/` (AVIF/WebP/JPG sin metadatos; solo recorte, escala y compresión, sin retoque ni versiones
+  generativas; al logo solo se le quita el fondo blanco). Datos de cada imagen en `src/content/media.js` y
+  `site.logo`. Para otra foto: `npm run images -- ruta/foto.jpg --name nombre`.
 - Marcas: `src/content/brands.js`. Originales en `assets-originales/logos-marcas/`; copias web con `npm run logos`.
 - Video y testimonios: `src/content/media.js` y `src/content/testimonials.js`.
 - Aviso de privacidad: `src/content/privacy.js` (borrador hasta completar datos y revisión legal).
-- Favicon e imagen social provisional: `npm run brand:assets` (requiere Playwright Chromium).
+- Favicon, íconos e imagen social: `npm run brand:assets` (isotipo, logo y foto reales; requiere Playwright
+  Chromium).
 
 ## Variables de entorno
 
@@ -154,15 +157,19 @@ aviso de privacidad.
 
 ## Decisiones de diseño y movimiento
 
-- Dirección editorial: azul profundo como ancla (#102A43), blancos y niebla (#F5F7F9), dorado (#C69A49) solo en
-  detalles; texto dorado sobre fondo claro con un tono más oscuro (#8C6A2E) para cumplir contraste.
+- Dirección editorial: azul profundo como ancla (#102A43), blancos y niebla (#F5F7F9) y los colores del logo
+  real: cobre (#C88040) en detalles y botones sólidos sin brillo (texto #081018, 4.9:1) y azul acero (#385870);
+  texto cobre sobre fondo claro con un tono más oscuro (#8F5420) para cumplir contraste.
 - Tipografía: Fraunces (títulos, 600 y 500 itálica) y Manrope (lectura, variable), autoalojadas (~66 KB),
   precargadas y con `font-display: optional` para que no haya cambios visibles de fuente.
-- Composiciones distintas por bloque: hero oscuro con retrato en arco y tarjetas flotantes inclinadas;
+- Composiciones distintas por bloque: hero azul profundo con la foto de Luis en arco, gráficos financieros
+  discretos (barras, cuadrícula y línea ascendente con movimiento suave) y tarjetas flotantes inclinadas;
   simulador como instrumento (controles claros + resultados oscuros); formulario en tarjeta blanca sobre azul;
   beneficios como lista editorial numerada y servicios en mosaico de tarjetas ilustradas con ligera inclinación;
   Sobre Luis con retrato desplazado y datos en lista.
 - Movimiento: entrada del hero en CSS (600–900 ms, sin intro); secciones que aparecen una vez al acercarse;
   transiciones cortas en el gráfico; header que cambia de superficie con un observador (sin escuchar scroll);
   carrusel lento con pausa. Con movimiento reducido no hay animaciones.
-- Sin retratos todavía: se muestra un monograma "LB" provisional (nunca una cara de stock o generada).
+- Retratos reales de Luis: traje azul en el hero (prioritario, `fetchpriority="high"`) y camisa azul en
+  "Sobre Luis" (diferido). Logo real: isotipo + nombre en HTML en el header y logo completo sobre placa blanca
+  en el footer (sus letras son oscuras y no se leerían sobre azul).

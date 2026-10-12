@@ -16,13 +16,17 @@ export const heroCopy = {
 
 export const simulatorCopy = {
   eyebrow: 'Simulador de ahorro y retiro',
-  title: 'Explora cuánto podrías reunir con una aportación mensual.',
-  intro:
-    'Mueve los valores y compara tus aportaciones acumuladas con un escenario ilustrativo. Es un punto de partida para conversar sobre ahorro, retiro y tus metas.',
+  title: 'El costo de esperar',
+  intro: 'Descubre cómo el tiempo influye en el ahorro que puedes construir para tu futuro.',
   contributionLabel: 'Aportación mensual',
   yearsLabel: 'Plazo',
   rateLabel: 'Tasa anual ilustrativa',
-  rateHelp: 'Empieza en 0 %. Cámbiala solo si quieres ver un escenario con crecimiento.',
+  contributionHelp: 'Aportación mínima: $2,000 MXN al mes.',
+  contributionMin: 'La aportación mínima es de $2,000 MXN mensuales.',
+  rateHelp: 'Tasa anual sugerida para esta simulación: 10–12 %',
+  // Supuesto indicado por Luis (no es una tasa contratada).
+  rateAssumption:
+    'El rango de 10–12 % es un supuesto ilustrativo indicado por Luis; no representa una tasa contratada ni un rendimiento garantizado.',
   contributedLabel: 'Aportaciones acumuladas',
   scenarioLabel: 'Escenario ilustrativo',
   differenceLabel: 'Diferencia ilustrativa',

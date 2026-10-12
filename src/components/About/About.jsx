@@ -16,9 +16,8 @@ export function About() {
           <Portrait
             image={media.aboutPortrait}
             variant="about"
-            sizes="(min-width: 960px) 440px, 90vw"
+            sizes="(min-width: 960px) 440px, min(90vw, 380px)"
             className="about__portrait"
-            note="Segundo retrato de Luis (distinto al del hero, idealmente en contexto de trabajo)."
           />
           <p className="about__caption">
             <span className="about__caption-name">{site.name}</span>

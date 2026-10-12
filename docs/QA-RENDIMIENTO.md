@@ -76,6 +76,30 @@ WebKit, el motor de Safari), así que se corrigieron las causas probables que la
   prueba E2E que exige los seis logos completos dentro de la pantalla a 320/375/390/1366 px.
 Pendiente: confirmación en el teléfono real tras el despliegue.
 
+## Ajuste del 11 de octubre: fotos y logo reales, simulador e interés del formulario
+
+Comprobado sobre el build de demostración (`SITE_MODE=demo`) con **emulación** en Chromium y WebKit
+(Playwright, Windows); no sustituye la prueba en teléfono físico ni permite afirmar fluidez sin tirones.
+
+| Comprobación | Chromium | WebKit |
+| --- | --- | --- |
+| 320, 375, 390 y 1366 px: sin scroll horizontal; CTA del hero en la primera pantalla; foto sin tapar título ni CTA | ✓ | ✓ |
+| Imágenes: retrato del hero `eager` + `fetchpriority="high"`, el resto `lazy`; todas con `width`/`height`; AVIF según ancho y densidad (p. ej. 720 w a 390 px ×2, 480 w en escritorio) | ✓ | ✓ |
+| Logo: isotipo + nombre en HTML en el header (29–32 px de alto), logo completo sobre placa blanca en el footer | ✓ | ✓ |
+| Fondo del hero: la línea se dibuja y el conjunto flota con movimiento normal; estático con movimiento reducido | ✓ | ✓ |
+| Carrusel: animado con movimiento normal; lista estática con movimiento reducido | ✓ | ✓ |
+| Pregunta de interés: aparece en ambas ramas, sin desbordar a 320 px y sin tomar el foco | ✓ | ✓ |
+
+- Unitarias (`npm test`): 101/101, incluidas combinaciones de interés permitidas y rechazadas, encabezados del
+  aviso para cada interés, mínimo de $2,000 aplicado al cálculo y 8 variables limpias para WhatsApp.
+- E2E (`npm run test:e2e`): 50/50 en dos corridas seguidas (más 3 de demostración con `E2E_DEMO=1`); la
+  prueba de la pregunta de interés también pasa en WebKit.
+- Hidratación sin advertencias (normal y demo); `npm audit`: 0 vulnerabilidades.
+- Corregido en esta ronda: a 320×568 el CTA del hero quedaba justo en el borde (espaciado compacto en
+  teléfonos bajos) y el foco tras un envío podía perderse si el resultado aún no estaba montado (ahora se
+  aplica en un efecto).
+- En WebKit, como en Safari, un clic en un radio no lo enfoca; el foco tampoco pasa a la nueva pregunta.
+
 ## Problemas encontrados y corregidos
 
 1. **Hidratación fallida** (React #418): un `<div>` (avatar) dentro de un `<p>`. Corregido; script de
@@ -125,10 +149,13 @@ Pendiente: confirmación en el teléfono real tras el despliegue.
    - Primera carga y recarga: hero visible de inmediato, sin parpadeos ni saltos; fuentes estables.
    - Scroll completo hacia abajo y hacia arriba: sin tirones; las secciones aparecen una vez.
    - Menú: abrir, navegar a cada sección (el título queda bajo el header), cerrar con la X.
-   - Simulador: arrastrar los tres controles, escribir valores exactos (0 y fuera de rango).
+   - Simulador: arrastrar los tres controles, escribir valores exactos (menos de $2,000 muestra el aviso y se
+     corrige al salir del campo; tasa 0 % y fuera de rango).
    - FAQ: abrir y cerrar.
    - Formulario: con el teclado abierto el campo activo queda visible y el header se retira; probar errores,
-     autorización, envío (modo demostración) y el aviso de privacidad sin perder datos.
+     las dos ramas de la pregunta de interés (y que cambiar de rama limpia la elección), autorización, envío
+     (modo demostración) y el aviso de privacidad sin perder datos.
+   - Hero: foto de Luis nítida y bien encuadrada; logo legible en header y footer.
    - Ajustes → Accesibilidad → Reducir movimiento: todo visible y operable.
 3. Para el carrusel con fixtures: `npm run dev -- --host` y abrir la URL de red en el puerto 5173.
 4. Anotar modelo, sistema y navegador, y marcar `telefono-fisico` en `src/content/launch.js` solo si todo pasa.

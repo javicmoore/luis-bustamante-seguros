@@ -1,8 +1,9 @@
-/* Dirección visual: azul profundo como ancla, blancos limpios y dorado moderado en detalles.
-   Paleta propuesta (confirmar cuando exista logo original):
-   #102A43 azul marino · #FFFFFF blanco · #F5F7F9 niebla · #C69A49 dorado.
-   Contraste: dorado #C69A49 sobre azul = 5.6:1 (texto OK). Sobre blanco solo como detalle;
-   para texto dorado sobre claro se usa --gold-ink (#8C6A2E, 4.9:1). */
+/* Dirección visual: azul profundo como ancla, blancos limpios y acentos cobre del logo real.
+   Colores del logo (muestreados del original): cobre #C88040, azul acero #385870,
+   barras #101820, gris #989890, nombre #081018.
+   Contraste: texto #081018 sobre cobre #C88040 = 4.9:1 (botones); cobre claro #E8B98A sobre
+   azul #102A43 = 8.2:1; texto cobre sobre claro con --gold-ink (#8F5420, 6:1).
+   Los tokens conservan el nombre "gold" para no tocar cada componente. */
 :root {
   --navy-950: #0a1d30;
   --navy-900: #102a43;
@@ -19,12 +20,14 @@
   --mist: #f5f7f9;
   --white: #ffffff;
 
-  --gold-600: #a9802f;
-  --gold-500: #c69a49;
-  --gold-400: #d3ad66;
-  --gold-300: #e4c991;
-  --gold-100: #f6eedd;
-  --gold-ink: #8c6a2e;
+  --gold-600: #a86a2f;
+  --gold-500: #c88040;
+  --gold-400: #d89a5c;
+  --gold-300: #e8b98a;
+  --gold-100: #f7eadc;
+  --gold-ink: #8f5420;
+  --steel-500: #385870;
+  --ink-deep: #081018;
 
   --danger: #b42318;
   --danger-bg: #fef3f2;

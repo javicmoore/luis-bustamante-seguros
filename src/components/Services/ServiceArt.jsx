@@ -3,8 +3,8 @@
 const NAVY = '#102a43';
 const NAVY_SOFT = '#7f98b0';
 const MIST = '#d2dce6';
-const GOLD = '#c69a49';
-const GOLD_SOFT = '#f6eedd';
+const GOLD = '#c88040';
+const GOLD_SOFT = '#f7eadc';
 
 function Goals() {
   return (

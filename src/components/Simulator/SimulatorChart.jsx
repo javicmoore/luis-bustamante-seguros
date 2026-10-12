@@ -132,8 +132,8 @@ export function SimulatorChart({ projection, inputs, labels }) {
       >
         <defs>
           <linearGradient id={`${uid}-gold`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#d3ad66" stopOpacity="0.38" />
-            <stop offset="1" stopColor="#d3ad66" stopOpacity="0" />
+            <stop offset="0" stopColor="#d89a5c" stopOpacity="0.38" />
+            <stop offset="1" stopColor="#d89a5c" stopOpacity="0" />
           </linearGradient>
         </defs>
         {[0, 0.5, 1].map((f) => (

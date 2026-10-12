@@ -4,12 +4,16 @@ import { open } from './utils.js';
 // Datos ficticios. El servidor de pruebas usa el proveedor simulado: no se envía nada real.
 const FAKE = { name: 'Prueba Ficticia', age: '41', phone: '686 000 0042' };
 
+// Opción de radio por su texto exacto ("Auto" no debe coincidir con "Auto turista").
+const option = (page, text) => page.locator('label.choice__option').filter({ hasText: new RegExp(`^${text}$`) });
+
 async function fillValid(page, overrides = {}) {
   const data = { ...FAKE, ...overrides };
   await page.locator('#lead-name').fill(data.name);
   await page.locator('#lead-age').fill(data.age);
   await page.locator('#lead-phone').fill(data.phone);
-  await page.locator('label.choice__option', { hasText: 'Busco un seguro / No aplica' }).click();
+  await option(page, 'Busco un seguro / No aplica').click();
+  await option(page, 'Auto').click();
   await page.locator('label.consent__label').click();
 }
 
@@ -32,12 +36,100 @@ test.describe('formulario de asesoría', () => {
     await expect(page.locator('#lead-phone')).toBeFocused();
   });
 
+  test('pregunta de interés: aparece según la respuesta, es obligatoria y se limpia al cambiar de rama', async ({ page }) => {
+    const interest = page.locator('.interest');
+    const legend = interest.locator('legend');
+    const checked = () => page.locator('input[name="interest"]:checked');
+    await expect(page.locator('input[name="interest"]')).toHaveCount(0);
+    await expect(interest).not.toHaveClass(/is-open/);
+
+    // Rama de seguros. El foco se queda en la respuesta elegida.
+    await option(page, 'Busco un seguro / No aplica').click();
+    await expect(legend).toHaveText('¿Qué seguro te interesa?');
+    await expect(interest.locator('label.choice__option')).toHaveText([
+      'Gastos médicos mayores (GMM)',
+      'Auto',
+      'Auto turista',
+      'Hogar',
+      'Otro',
+    ]);
+    // La nueva pregunta nunca toma el foco. (Chromium deja el foco en el radio elegido; WebKit, como
+    // Safari, no enfoca radios al hacer clic.)
+    expect(await page.evaluate(() => Boolean(document.activeElement?.closest('.interest')))).toBe(false);
+    if (test.info().project.use.browserName !== 'webkit') {
+      await expect(page.locator('input[name="savings"][value="no_aplica"]')).toBeFocused();
+    }
+    await expect(page.locator('p[aria-live="polite"]', { hasText: 'Nueva pregunta' })).toHaveText(
+      'Nueva pregunta: ¿Qué seguro te interesa?',
+    );
+
+    // Obligatoria: sin elegir, el envío señala el campo.
+    await page.locator('#lead-name').fill(FAKE.name);
+    await page.locator('#lead-age').fill(FAKE.age);
+    await page.locator('#lead-phone').fill(FAKE.phone);
+    await page.locator('label.consent__label').click();
+    let posted = 0;
+    page.on('request', (r) => r.url().includes('/api/leads') && (posted += 1));
+    await page.getByRole('button', { name: 'Solicitar mi asesoría' }).click();
+    await expect(page.locator('#lead-interest-error')).toHaveText('Elige qué seguro te interesa.');
+    await expect(page.locator('.lead-summary li')).toHaveText(['Interés: Elige qué seguro te interesa.']);
+    expect(posted).toBe(0);
+    await page.locator('.lead-summary').getByRole('link', { name: /Interés/ }).click();
+    await expect(page.locator('#lead-interest')).toBeFocused();
+    await option(page, 'Hogar').click();
+    await expect(page.locator('#lead-interest-error')).toHaveCount(0);
+    await expect(checked()).toHaveValue('hogar');
+
+    // Cambio a la rama de ahorro: otra pregunta y selección limpia.
+    await option(page, 'Sí').click();
+    await expect(legend).toHaveText('¿Sobre qué te gustaría recibir asesoría?');
+    await expect(interest.locator('label.choice__option')).toHaveText([
+      'PPR / retiro',
+      'Ahorro e inversión',
+      'Educación',
+      'Necesito orientación',
+    ]);
+    await expect(checked()).toHaveCount(0);
+    await expect(page.locator('#lead-interest-error')).toHaveText('Elige sobre qué te gustaría recibir asesoría.');
+
+    // Entre "Sí" y "No" (misma rama) se conserva; al volver a seguros se limpia.
+    await option(page, 'Necesito orientación').click();
+    await option(page, 'No').click();
+    await expect(checked()).toHaveValue('orientacion');
+    await option(page, 'Busco un seguro / No aplica').click();
+    await expect(checked()).toHaveCount(0);
+    await expect(legend).toHaveText('¿Qué seguro te interesa?');
+  });
+
+  test('responder "No" no bloquea: se envía con el interés elegido y sin campos extra', async ({ page }) => {
+    let body = null;
+    await page.route('**/api/leads', async (route) => {
+      body = route.request().postDataJSON();
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, status: 'received', id: 'LB-DDDDDDDD', notification: 'accepted' }),
+      });
+    });
+    await page.locator('#lead-name').fill(FAKE.name);
+    await page.locator('#lead-age').fill(FAKE.age);
+    await page.locator('#lead-phone').fill(FAKE.phone);
+    await option(page, 'No').click();
+    await option(page, 'PPR / retiro').click();
+    await page.locator('label.consent__label').click();
+    await page.getByRole('button', { name: 'Solicitar mi asesoría' }).click();
+    await expect(page.locator('.lead-result')).toBeVisible();
+    expect(body).toMatchObject({ savings: 'no', interest: 'ppr_retiro', consent: true });
+    expect(Object.keys(body).sort()).toEqual(['age', 'consent', 'interest', 'name', 'phone', 'savings', 'website']);
+  });
+
   test('la autorización empieza sin marcar y sin ella no se envía', async ({ page }) => {
     await expect(page.locator('#lead-consent')).not.toBeChecked();
     await page.locator('#lead-name').fill(FAKE.name);
     await page.locator('#lead-age').fill(FAKE.age);
     await page.locator('#lead-phone').fill(FAKE.phone);
-    await page.locator('label.choice__option', { hasText: 'No' }).first().click();
+    await option(page, 'No').click();
+    await option(page, 'Educación').click();
     let posted = 0;
     page.on('request', (r) => r.url().includes('/api/leads') && (posted += 1));
     await page.getByRole('button', { name: 'Solicitar mi asesoría' }).click();

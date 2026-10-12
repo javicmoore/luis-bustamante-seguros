@@ -105,7 +105,9 @@ export function Simulator() {
               valueText={(v) => `${formatMoney(v)} al mes`}
               parseDraft={parseInteger}
               prefix="$"
-              inputLabel="Aportación mensual en pesos, valor exacto"
+              help={copy.contributionHelp}
+              minMessage={copy.contributionMin}
+              inputLabel="Aportación mensual en pesos, valor exacto (mínimo 2,000)"
             />
             <RangeField
               id="sim-years"
@@ -160,7 +162,9 @@ export function Simulator() {
 
             <p className="sim__disclaimer">
               <Icon name="alert" />
-              <span>{copy.disclaimer}</span>
+              <span>
+                {copy.rateAssumption} {copy.disclaimer}
+              </span>
             </p>
             <a
               className="btn btn--gold sim__cta"

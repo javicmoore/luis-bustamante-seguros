@@ -60,6 +60,7 @@ async function createLeadRecord(store, lead, config, receivedAt) {
         age: lead.age,
         phone: lead.phoneE164,
         savings: lead.savings,
+        interest: lead.interest,
         consentAt: receivedAt.toISOString(),
         consentVersion: CONSENT_VERSION,
         notify: 'notifying',
@@ -85,7 +86,7 @@ export async function processLead({ lead, idempotencyKey, ipHash, deps }) {
   const demo = Boolean(notifier.demo);
   const fingerprint = hmacHex(
     config.hashSecret,
-    JSON.stringify([lead.name, lead.age, lead.phoneE164, lead.savings]),
+    JSON.stringify([lead.name, lead.age, lead.phoneE164, lead.savings, lead.interest]),
   );
   const idemKey = `idem:${idempotencyKey}`;
   const saveState = (state) =>

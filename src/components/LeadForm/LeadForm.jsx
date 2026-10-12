@@ -1,8 +1,16 @@
-import { useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { formCopy as copy } from '../../content/copy.js';
 import { site } from '../../content/site.js';
 import { media } from '../../content/media.js';
-import { LEAD_LIMITS, SAVINGS_OPTIONS, normalizeName, validateLead } from '../../../shared/lead-schema.js';
+import {
+  INTEREST_QUESTIONS,
+  LEAD_LIMITS,
+  SAVINGS_OPTIONS,
+  interestBranch,
+  interestOptionsFor,
+  normalizeName,
+  validateLead,
+} from '../../../shared/lead-schema.js';
 import { track } from '../../lib/analytics.js';
 import { IS_DEMO } from '../../lib/siteMode.js';
 import { Icon } from '../ui/Icon.jsx';
@@ -11,7 +19,7 @@ import { PrivacyDialog } from '../Privacy/PrivacyDialog.jsx';
 import { createIdempotencyTracker, submitLead, wait } from './submitLead.js';
 import './LeadForm.css';
 
-const FIELDS = ['name', 'age', 'phone', 'savings', 'consent'];
+const FIELDS = ['name', 'age', 'phone', 'savings', 'interest', 'consent'];
 
 const MESSAGES = {
   name: {
@@ -33,9 +41,19 @@ const MESSAGES = {
     required: 'Elige una opción; cualquier respuesta es válida.',
     invalid: 'Elige una de las opciones.',
   },
+  interest: {
+    // El texto de "required" depende de la rama (ver interestMessage).
+    invalid: 'Elige una de las opciones.',
+    incompatible: 'Elige una de las opciones de esta pregunta.',
+  },
   consent: {
     required: 'Para que Luis pueda contactarte, marca la autorización.',
   },
+};
+
+const INTEREST_REQUIRED = {
+  seguro: 'Elige qué seguro te interesa.',
+  ahorro: 'Elige sobre qué te gustaría recibir asesoría.',
 };
 
 const FIELD_LABELS = {
@@ -43,6 +61,7 @@ const FIELD_LABELS = {
   age: copy.ageLabel,
   phone: copy.phoneLabel,
   savings: 'Ahorro o retiro',
+  interest: 'Interés',
   consent: 'Autorización de contacto',
 };
 
@@ -77,7 +96,7 @@ const ERROR_COPY = {
   },
 };
 
-const INITIAL = { name: '', age: '', phone: '', savings: '', consent: false, website: '' };
+const INITIAL = { name: '', age: '', phone: '', savings: '', interest: '', consent: false, website: '' };
 
 // Suscripción vacía: en el servidor (y durante la hidratación) devuelve false; en el cliente, true.
 const subscribeNoop = () => () => {};
@@ -119,6 +138,13 @@ export function LeadForm() {
   const keyFor = useRef(null);
   const summaryRef = useRef(null);
   const resultRef = useRef(null);
+  // Foco tras una respuesta asíncrona: se aplica en un efecto, cuando el elemento ya existe
+  // (un requestAnimationFrame podía ejecutarse antes de que React montara el resultado).
+  const [focusRequest, setFocusRequest] = useState(null);
+  useEffect(() => {
+    if (!focusRequest) return;
+    (focusRequest.target === 'result' ? resultRef : summaryRef).current?.focus();
+  }, [focusRequest]);
 
   const liveErrors = useMemo(() => fieldErrors(values), [values]);
   const submitting = status.state === 'submitting';
@@ -134,15 +160,30 @@ export function LeadForm() {
   };
   const messageFor = (field) => {
     const code = errorFor(field);
-    return code ? MESSAGES[field][code] || MESSAGES[field].invalid || MESSAGES[field].required : null;
+    if (!code) return null;
+    if (field === 'interest' && code === 'required') return INTEREST_REQUIRED[interestBranch(values.savings)] || MESSAGES.interest.invalid;
+    return MESSAGES[field][code] || MESSAGES[field].invalid || MESSAGES[field].required;
   };
 
   const update = (field, value) => {
     if (submitting) return;
-    setValues((prev) => ({ ...prev, [field]: value }));
-    if (serverErrors[field]) setServerErrors(({ [field]: _removed, ...rest }) => rest);
+    setValues((prev) => {
+      const next = { ...prev, [field]: value };
+      // Al cambiar entre la rama de seguros y la de ahorro se limpia el interés elegido, para no
+      // enviar una selección oculta o contradictoria. Entre "Sí" y "No" se conserva.
+      if (field === 'savings' && interestBranch(prev.savings) !== interestBranch(value)) next.interest = '';
+      return next;
+    });
+    // Cambiar la respuesta de ahorro también descarta un error del servidor sobre el interés.
+    const stale = field === 'savings' ? [field, 'interest'] : [field];
+    if (stale.some((key) => serverErrors[key])) {
+      setServerErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => !stale.includes(key))));
+    }
     if (status.state === 'error') setStatus({ state: 'idle' });
   };
+
+  const branch = interestBranch(values.savings);
+  const interestOptions = interestOptionsFor(values.savings);
   const blur = (field) => setTouched((prev) => ({ ...prev, [field]: true }));
 
   const summaryFields = attempted ? FIELDS.filter((field) => errorFor(field)) : [];
@@ -161,7 +202,7 @@ export function LeadForm() {
     if (IS_DEMO) {
       // Demostración: no hay petición al servidor, ni registro, ni aviso a Luis.
       setStatus({ state: 'demo' });
-      requestAnimationFrame(() => resultRef.current?.focus());
+      setFocusRequest({ target: 'result' });
       return;
     }
 
@@ -172,6 +213,7 @@ export function LeadForm() {
       values.age.trim(),
       values.phone.replace(/\D/g, ''),
       values.savings,
+      values.interest,
       values.consent,
     ]);
     if (!keyFor.current) keyFor.current = createIdempotencyTracker();
@@ -201,7 +243,7 @@ export function LeadForm() {
       // Conversión solo con recepción real del servidor.
       track('lead_submitted', { notification: pending ? 'pending' : 'accepted' });
       setStatus({ state: pending ? 'pending' : 'success', id: data.id, demo: data.demo === true });
-      requestAnimationFrame(() => resultRef.current?.focus());
+      setFocusRequest({ target: 'result' });
       return;
     }
 
@@ -210,7 +252,7 @@ export function LeadForm() {
       for (const field of FIELDS) if (typeof data.fields[field] === 'string') mapped[field] = data.fields[field];
       setServerErrors(mapped);
       setStatus({ state: 'idle' });
-      requestAnimationFrame(() => summaryRef.current?.focus());
+      setFocusRequest({ target: 'summary' });
       return;
     }
 
@@ -251,7 +293,7 @@ export function LeadForm() {
             ))}
           </ul>
           <div className="request__signature">
-            <Portrait image={media.heroPortrait} variant="avatar" className="request__avatar" sizes="56px" />
+            <Portrait image={media.avatar} variant="avatar" className="request__avatar" sizes="56px" />
             <div>
               <p className="request__signature-name">{site.name}</p>
               <p className="request__signature-role">{site.role}</p>
@@ -480,6 +522,47 @@ export function LeadForm() {
                   </p>
                 ) : null}
               </fieldset>
+
+              {/* Pregunta de interés: aparece según la respuesta anterior, sin mover el foco. */}
+              <div className={`interest${branch ? ' is-open' : ''}`}>
+                <div className="interest__inner">
+                  {branch ? (
+                    <fieldset
+                      key={branch}
+                      className={`field choice interest__fieldset${errorFor('interest') ? ' has-error' : ''}`}
+                      aria-describedby={describedBy('interest')}
+                    >
+                      <legend className="field__label">{INTEREST_QUESTIONS[branch]}</legend>
+                      <div className="choice__options choice__options--interest">
+                        {interestOptions.map((option, index) => (
+                          <label key={option.value} className="choice__option">
+                            <input
+                              id={index === 0 ? 'lead-interest' : undefined}
+                              type="radio"
+                              name="interest"
+                              value={option.value}
+                              checked={values.interest === option.value}
+                              onChange={() => update('interest', option.value)}
+                              onBlur={() => blur('interest')}
+                            />
+                            <span className="choice__mark" aria-hidden="true" />
+                            <span className="choice__text">{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                      {messageFor('interest') ? (
+                        <p id="lead-interest-error" className="field__error">
+                          <Icon name="alert" />
+                          {messageFor('interest')}
+                        </p>
+                      ) : null}
+                    </fieldset>
+                  ) : null}
+                </div>
+              </div>
+              <p className="visually-hidden" aria-live="polite">
+                {branch ? `Nueva pregunta: ${INTEREST_QUESTIONS[branch]}` : ''}
+              </p>
 
               <div className={`field consent${errorFor('consent') ? ' has-error' : ''}`}>
                 <label className="consent__label">

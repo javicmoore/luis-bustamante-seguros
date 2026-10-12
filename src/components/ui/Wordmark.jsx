@@ -1,28 +1,30 @@
 import { site } from '../../content/site.js';
 import './Wordmark.css';
 
-// Sin logo original: nombre compuesto tipográficamente (no es un logotipo oficial).
-// Cuando exista site.logo se usa el archivo con sus proporciones reales.
-export function Wordmark({ href = '/', onClick, tone = 'auto', className = '' }) {
+/**
+ * Identidad del header: isotipo real de Luis sobre una placa clara (sus barras son casi negras
+ * y no se leerían sobre el azul del hero) con el nombre y el lema del logo en HTML.
+ * No se recrean letras del logo: el texto es el mismo nombre y lema, en la tipografía del sitio.
+ */
+export function Wordmark({ href = '/', onClick, className = '' }) {
+  const iso = site.logo?.isotype;
   return (
-    <a className={`wordmark wordmark--${tone} ${className}`.trim()} href={href} onClick={onClick}>
-      {site.logo ? (
-        <img
-          className="wordmark__logo"
-          src={site.logo.src}
-          width={site.logo.width}
-          height={site.logo.height}
-          alt={site.logo.alt || site.name}
-        />
-      ) : (
-        <>
-          <span className="wordmark__name">{site.name}</span>
-          <span className="wordmark__role" aria-hidden="true">
-            Seguros · Finanzas
-          </span>
-          <span className="visually-hidden">, inicio</span>
-        </>
-      )}
+    <a className={`wordmark ${className}`.trim()} href={href} onClick={onClick}>
+      {iso ? (
+        <span className="wordmark__badge" aria-hidden="true">
+          <picture>
+            <source type="image/webp" srcSet={iso.src} />
+            <img src={iso.fallback} width={iso.width} height={iso.height} alt="" decoding="async" />
+          </picture>
+        </span>
+      ) : null}
+      <span className="wordmark__text">
+        <span className="wordmark__name">{site.name}</span>
+        <span className="wordmark__role" aria-hidden="true">
+          {site.logo?.tagline || 'Seguros · Finanzas'}
+        </span>
+      </span>
+      <span className="visually-hidden">, inicio</span>
     </a>
   );
 }

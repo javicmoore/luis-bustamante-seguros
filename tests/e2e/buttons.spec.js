@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { open } from './utils.js';
 
-const GOLD = 'rgb(198, 154, 73)';
+const GOLD = 'rgb(200, 128, 64)';
 
 test('botones dorados mates: sin sombra ni filtros en reposo, hover y active; foco visible', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });

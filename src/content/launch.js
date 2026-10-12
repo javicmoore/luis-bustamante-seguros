@@ -2,6 +2,12 @@
 // (no por suposición). `npm run check:release` y el build de producción en Vercel las exigen.
 export const launchChecklist = [
   {
+    id: 'plantilla-whatsapp-interes',
+    done: false,
+    label:
+      'Plantilla de WhatsApp de 8 variables (con interés del prospecto) aprobada en Twilio/Meta y su ContentSid cargado en TWILIO_CONTENT_SID (ver docs/WHATSAPP-TWILIO.md).',
+  },
+  {
     id: 'whatsapp-prueba-autorizada',
     done: false,
     label:

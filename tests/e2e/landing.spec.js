@@ -151,13 +151,77 @@ test.describe('header y navegación', () => {
 });
 
 test.describe('simulador', () => {
-  test('tasa inicial 0 %: escenario igual a aportaciones; cambios recalculan cifras y gráfico', async ({ page }) => {
+  // FV de una aportación mensual al final de cada mes, con tasa anual efectiva convertida a mensual.
+  const fvText = (contribution, months, annual) => {
+    const i = Math.pow(1 + annual / 100, 1 / 12) - 1;
+    const fv = annual === 0 ? contribution * months : contribution * ((Math.pow(1 + i, months) - 1) / i);
+    return `$${Math.round(fv).toLocaleString('en-US')}`;
+  };
+
+  test('título, textos y tasa inicial ilustrativa de 10 %; con 0 % el escenario iguala las aportaciones', async ({ page }) => {
     await open(page, '/');
+    await expect(page.locator('#sim-title')).toHaveText('El costo de esperar');
+    await expect(page.getByText('Descubre cómo el tiempo influye en el ahorro que puedes construir para tu futuro.')).toBeVisible();
+    await expect(page.locator('label[for="sim-rate-range"]')).toHaveText('Tasa anual ilustrativa');
+    await expect(page.getByText('Tasa anual sugerida para esta simulación: 10–12 %')).toBeVisible();
+    await expect(page.locator('.sim__disclaimer')).toContainText('supuesto ilustrativo indicado por Luis');
+    await expect(page.locator('.sim__disclaimer')).toContainText('no representa una tasa contratada ni un rendimiento garantizado');
+    await expect(page.locator('#sim-rate-input')).toHaveValue('10');
+    await expect(page.locator('#sim-contribution-input')).toHaveValue('3,000');
+
     const figures = page.locator('.sim-figure dd');
     await expect(figures.nth(0)).toHaveText('$540,000');
+    await expect(figures.nth(1)).toHaveText(fvText(3000, 180, 10));
+
+    const rate = page.locator('#sim-rate-input');
+    await rate.fill('0');
+    await rate.press('Enter');
+    await expect(page.locator('#sim-rate-range')).toHaveValue('0');
     await expect(figures.nth(1)).toHaveText('$540,000');
     await expect(page.getByText('Con una tasa de 0 %, el escenario ilustrativo es igual a tus aportaciones.')).toBeVisible();
+  });
 
+  test('aportación mínima de $2,000: avisa al escribir, corrige al confirmar y se aplica al cálculo', async ({ page }) => {
+    await open(page, '/');
+    const amount = page.locator('#sim-contribution-input');
+    const range = page.locator('#sim-contribution-range');
+    const note = page.locator('[data-field="sim-contribution"] .range-field__note');
+    const figures = page.locator('.sim-figure dd');
+    await expect(range).toHaveAttribute('min', '2000');
+    await expect(page.getByText('Aportación mínima: $2,000 MXN al mes.')).toBeVisible();
+
+    // Mientras escribe: aviso, sin corregir cada pulsación ni recalcular con un valor inválido.
+    await amount.fill('1500');
+    await expect(note).toHaveText('La aportación mínima es de $2,000 MXN mensuales.');
+    await expect(amount).toHaveValue('1500');
+    await expect(figures.nth(0)).toHaveText('$540,000');
+
+    // Al confirmar (blur): se corrige al mínimo y el cálculo usa $2,000.
+    await amount.press('Tab');
+    await expect(amount).toHaveValue('2,000');
+    await expect(range).toHaveValue('2000');
+    await expect(note).toContainText('Se ajustó a $2,000');
+    await expect(figures.nth(0)).toHaveText('$360,000');
+    await expect(figures.nth(1)).toHaveText(fvText(2000, 180, 10));
+
+    // Con Enter también se corrige; un valor válido no muestra aviso.
+    await amount.fill('0');
+    await amount.press('Enter');
+    await expect(amount).toHaveValue('2,000');
+    await amount.fill('2750');
+    await expect(note).toHaveText('');
+    await amount.press('Enter');
+    await expect(figures.nth(0)).toHaveText('$495,000');
+
+    // El slider no baja del mínimo.
+    await range.focus();
+    await page.keyboard.press('Home');
+    await expect(range).toHaveValue('2000');
+  });
+
+  test('los cambios recalculan cifras y gráfico', async ({ page }) => {
+    await open(page, '/');
+    const figures = page.locator('.sim-figure dd');
     const before = await page.locator('.sim-chart__line-scenario').getAttribute('d');
     const rate = page.locator('#sim-rate-input');
     await rate.fill('6');
@@ -172,13 +236,9 @@ test.describe('simulador', () => {
     expect(await page.locator('.sim-chart__line-scenario').getAttribute('d')).not.toBe(before);
   });
 
-  test('aportación cero, plazos límite y teclado en los sliders', async ({ page }) => {
+  test('plazos límite y teclado en los sliders', async ({ page }) => {
     await open(page, '/');
     const amount = page.locator('#sim-contribution-input');
-    await amount.fill('0');
-    await amount.press('Enter');
-    await expect(page.locator('.sim-figure dd').nth(0)).toHaveText('$0');
-    await expect(page.locator('.sim-figure dd').nth(1)).toHaveText('$0');
 
     const years = page.locator('#sim-years-range');
     await years.focus();
@@ -222,6 +282,22 @@ test.describe('movimiento reducido', () => {
     expect(opacity === 'none' || opacity === 'matrix(1, 0, 0, 1, 0, 0)').toBe(true);
     await page.locator('#faq').scrollIntoViewIfNeeded();
     await expect(page.locator('#faq-title')).toBeVisible();
+  });
+
+  test('la pregunta de interés del formulario aparece sin animación', async ({ page }) => {
+    await open(page, '/#asesoria');
+    await page.locator('label.choice__option').filter({ hasText: /^Sí$/ }).click();
+    const fieldset = page.locator('.interest__fieldset');
+    await expect(fieldset).toBeVisible();
+    const motion = await fieldset.evaluate((el) => ({
+      animation: getComputedStyle(el).animationName,
+      transition: getComputedStyle(el.closest('.interest')).transitionDuration,
+      height: el.closest('.interest').getBoundingClientRect().height,
+      inner: el.getBoundingClientRect().height,
+    }));
+    expect(motion.animation).toBe('none');
+    expect(parseFloat(motion.transition)).toBeLessThan(0.01);
+    expect(motion.height).toBeGreaterThanOrEqual(motion.inner);
   });
 });
 

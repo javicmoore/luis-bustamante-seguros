@@ -26,7 +26,7 @@
   max-width: var(--container-wide);
   height: var(--header-h);
   margin-inline: auto;
-  padding: 0 0.5rem 0 1.25rem;
+  padding: 0 0.5rem 0 0.55rem;
   border: 1px solid rgb(255 255 255 / 0.16);
   border-radius: var(--radius-pill);
   background: rgb(10 29 48 / 0.28);
@@ -109,7 +109,7 @@
 .site-header__cta {
   display: none;
   --btn-bg: var(--gold-500);
-  --btn-fg: var(--navy-950);
+  --btn-fg: var(--ink-deep);
 }
 
 .site-header__cta:hover {
@@ -196,7 +196,7 @@
   padding: calc(var(--demo-h) + var(--header-top) + var(--header-h) + 1.75rem) var(--gutter)
     calc(1.5rem + env(safe-area-inset-bottom));
   background:
-    radial-gradient(120% 60% at 100% 0%, rgb(198 154 73 / 0.12), transparent 60%),
+    radial-gradient(120% 60% at 100% 0%, rgb(200 128 64 / 0.12), transparent 60%),
     var(--navy-950);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -325,6 +325,6 @@
   }
 
   .site-header__bar {
-    padding-left: 1.75rem;
+    padding-left: 0.6rem;
   }
 }

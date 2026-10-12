@@ -28,7 +28,8 @@ test.describe('despliegue de demostración', () => {
     await page.locator('#lead-name').fill('Prueba Ficticia');
     await page.locator('#lead-age').fill('40');
     await page.locator('#lead-phone').fill('686 000 0042');
-    await page.locator('label.choice__option', { hasText: 'No' }).first().click();
+    await page.locator('label.choice__option').filter({ hasText: /^No$/ }).click();
+    await page.locator('label.choice__option').filter({ hasText: /^Necesito orientación$/ }).click();
     await page.locator('label.consent__label').click();
     await page.getByRole('button', { name: 'Solicitar mi asesoría' }).click();
     const result = page.locator('.lead-result');
