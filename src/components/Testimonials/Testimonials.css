@@ -8,7 +8,7 @@
   display: grid;
   gap: 1rem;
   max-width: 40rem;
-  margin-bottom: clamp(2rem, 4vw, 3.5rem);
+  margin-bottom: var(--block-y);
 }
 
 .testimonials__list {

@@ -1,3 +1,5 @@
+import { revealNow } from './reveal.js';
+
 export function prefersReducedMotion() {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
@@ -9,6 +11,7 @@ export function prefersReducedMotion() {
 export function goToSection(id, { updateHash = true } = {}) {
   const target = document.getElementById(id);
   if (!target) return;
+  revealNow(target);
   target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
   const focusTarget = target.querySelector('[data-section-focus]') || target;
   if (!focusTarget.hasAttribute('tabindex')) focusTarget.setAttribute('tabindex', '-1');

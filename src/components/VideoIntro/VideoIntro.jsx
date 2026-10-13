@@ -1,86 +1,108 @@
 import { useEffect, useRef, useState } from 'react';
-import { video } from '../../content/media.js';
+import { media, video } from '../../content/media.js';
 import { videoCopy as copy } from '../../content/copy.js';
+import { IS_DEMO } from '../../lib/siteMode.js';
 import { DevNote } from '../ui/DevNote.jsx';
-import { Icon } from '../ui/Icon.jsx';
+import { ResponsivePicture } from '../ui/Portrait.jsx';
 import './VideoIntro.css';
 
+// Mientras el video está en edición se muestra la foto original de traje azul, sin controles.
+const placeholderImage = { ...media.heroPortrait, alt: '' };
+
 /**
- * Video de presentación. Patrón "fachada": se muestra el póster y el archivo de video solo
- * se solicita cuando el visitante decide reproducirlo (sin autoplay con audio).
- * Sin video real: en desarrollo se ve el pendiente; en producción la sección no se publica.
+ * Reproductor nativo (controles accesibles del navegador, playsInline, sin reproducción
+ * automática). Archivo y póster se asignan solo cuando la sección se acerca al viewport, así
+ * nada compite con la carga del hero; la proporción sale de width/height del archivo real.
  */
-export function VideoIntro() {
-  const [playing, setPlaying] = useState(false);
-  const videoRef = useRef(null);
+function VideoPlayer({ config }) {
+  const frameRef = useRef(null);
+  // Sin IntersectionObserver (navegadores muy antiguos) el reproductor se prepara de inmediato.
+  const [near, setNear] = useState(() => typeof window !== 'undefined' && !('IntersectionObserver' in window));
 
   useEffect(() => {
-    if (!playing || !videoRef.current) return;
-    videoRef.current.focus();
-    videoRef.current.play().catch(() => {});
-  }, [playing]);
-
-  const hasVideo = Boolean(video.src);
-  if (!hasVideo && !import.meta.env.DEV) return null;
+    const frame = frameRef.current;
+    if (!frame || near) return undefined;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) setNear(true);
+    }, { rootMargin: '600px 0px' });
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, [near]);
 
   return (
-    <section id="video" className="section video-intro" aria-labelledby="video-title">
-      <div className="container">
+    <div ref={frameRef} className="video-intro__screen">
+      <video
+        className="video-intro__media"
+        controls
+        playsInline
+        preload="none"
+        width={config.width}
+        height={config.height}
+        src={near ? config.src : undefined}
+        poster={near && config.poster ? config.poster : undefined}
+        aria-label={copy.videoLabel}
+      >
+        {near && config.captions ? (
+          <track kind="captions" src={config.captions} srcLang="es" label="Español" default />
+        ) : null}
+        Tu navegador no puede reproducir este video.
+      </video>
+    </div>
+  );
+}
+
+/**
+ * "Conoce a Luis": video de presentación, inmediatamente después de "Sobre Luis".
+ * Con video: reproductor. Sin video: en demo y desarrollo, la foto con la etiqueta
+ * "Video de presentación próximamente" (sin botones que no funcionen); en producción la
+ * sección no se publica.
+ */
+export function VideoIntro({ config = video }) {
+  if (config.decision === 'omitir') return null;
+  const hasVideo = Boolean(config.src && config.width > 0 && config.height > 0);
+  if (!hasVideo && !IS_DEMO && !import.meta.env.DEV) return null;
+
+  const { width, height } = hasVideo ? config : placeholderImage;
+  const vertical = height > width;
+
+  return (
+    <section
+      id="video"
+      className={`section video-intro on-dark${vertical ? ' video-intro--vertical' : ''}`}
+      aria-labelledby="video-title"
+    >
+      <div className="container video-intro__grid">
         <header className="video-intro__head" data-reveal="">
           <p className="eyebrow">{copy.eyebrow}</p>
-          <h2 id="video-title" className="section-title">
+          <h2 id="video-title" className="section-title" data-section-focus="">
             {copy.title}
           </h2>
+          <p className="lead">{copy.lead}</p>
         </header>
 
-        {hasVideo ? (
-          <div className="video-intro__frame" data-reveal="" data-reveal-delay="1">
-            {playing ? (
-              <video
-                ref={videoRef}
-                className="video-intro__media"
-                controls
-                playsInline
-                preload="none"
-                poster={video.poster || undefined}
-                width={video.width}
-                height={video.height}
-              >
-                <source src={video.src} type={video.type} />
-                {video.captions ? <track kind="captions" src={video.captions} srcLang="es" label="Español" default /> : null}
-                Tu navegador no puede reproducir este video.
-              </video>
-            ) : (
-              <button type="button" className="video-intro__facade" onClick={() => setPlaying(true)}>
-                {video.poster ? (
-                  <img
-                    className="video-intro__poster"
-                    src={video.poster}
-                    alt=""
-                    width={video.width}
-                    height={video.height}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : null}
-                <span className="video-intro__play">
-                  <Icon name="play" />
-                </span>
-                <span className="visually-hidden">{copy.playLabel}</span>
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="video-intro__frame video-intro__frame--pending" data-reveal="" data-reveal-delay="1">
-            <div className="video-intro__pending">
-              <p className="video-intro__pending-title">Espacio reservado para el video de presentación de Luis</p>
+        <figure className="video-intro__figure" data-reveal="" data-reveal-delay="1">
+          {hasVideo ? (
+            <VideoPlayer config={config} />
+          ) : (
+            <>
+              <div className="video-intro__screen">
+                <ResponsivePicture
+                  image={placeholderImage}
+                  sizes="(min-width: 960px) 380px, min(92vw, 420px)"
+                  className="video-intro__picture"
+                />
+              </div>
+              <figcaption className="video-intro__soon">
+                <span className="video-intro__soon-dot" aria-hidden="true" />
+                {copy.soon}
+              </figcaption>
               <DevNote>
-                falta el archivo de video real (MP4 H.264, horizontal 16:9, idealmente 60–90 s, con subtítulos .vtt)
-                y un póster. Sin video, esta sección no se publica en producción.
+                falta el video final (MP4 H.264 con audio AAC), su miniatura tomada del propio video y, de
+                preferencia, subtítulos .vtt. Sin video, en producción esta sección no se publica.
               </DevNote>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </figure>
       </div>
     </section>
   );

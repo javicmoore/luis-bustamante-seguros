@@ -41,14 +41,6 @@ export function About() {
             {copy.approach}
           </p>
 
-          <dl className="about__facts" data-reveal="" data-reveal-delay="2">
-            {copy.facts.map((fact) => (
-              <div key={fact.term} className="about__fact">
-                <dt>{fact.term}</dt>
-                <dd>{fact.detail}</dd>
-              </div>
-            ))}
-          </dl>
 
           <div className="about__actions" data-reveal="" data-reveal-delay="2">
             <a

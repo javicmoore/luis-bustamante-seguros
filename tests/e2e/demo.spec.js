@@ -73,6 +73,37 @@ test.describe('despliegue de demostración', () => {
     }
   });
 
+  test('"Conoce a Luis" va justo después de "Sobre Luis" con la foto y la etiqueta, sin controles', async ({ page }) => {
+    for (const [width, height] of [
+      [320, 640],
+      [390, 844],
+      [768, 1024],
+      [1366, 900],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await open(page, '/');
+      const ids = await page.$$eval('main > section', (els) => els.map((el) => el.id));
+      expect(ids[ids.indexOf('sobre-luis') + 1]).toBe('video');
+      const section = page.locator('#video');
+      await expect(section.locator('#video-title')).toHaveText('Conoce a Luis');
+      await expect(section.getByText('Video de presentación próximamente')).toBeVisible();
+      await expect(section.locator('video, button, [controls]')).toHaveCount(0);
+      const img = section.locator('.video-intro__picture img');
+      await expect(img).toHaveAttribute('loading', 'lazy');
+      await section.scrollIntoViewIfNeeded();
+      await expect.poll(() => img.evaluate((el) => el.complete && el.naturalWidth > 0)).toBe(true);
+      const m = await img.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return { w: r.width, h: r.height, natural: el.naturalWidth / el.naturalHeight, container: el.closest('.container').clientWidth };
+      });
+      // Foto completa, sin estirar ni recortar.
+      expect(Math.abs(m.w / m.h - m.natural)).toBeLessThan(0.01);
+      if (width >= 960) expect(m.w).toBeLessThanOrEqual(380.5);
+      else expect(m.w).toBeGreaterThanOrEqual(Math.min(420, m.container - 40) - 0.5);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+    }
+  });
+
   test('sin scroll horizontal en móvil con el aviso', async ({ page }) => {
     for (const width of [320, 375, 390, 414]) {
       await page.setViewportSize({ width, height: 700 });

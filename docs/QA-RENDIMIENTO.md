@@ -118,6 +118,25 @@ reducido (16 combinaciones), con capturas de viewport al inicio y durante el scr
 - Escritorio (1024, 1366 y 1920 px): misma geometría y estilos calculados en 162 elementos del aviso, header
   y hero, comparados contra el build anterior.
 
+## Ajuste del 13 de octubre: "Sobre Luis", "Conoce a Luis", espaciado y redacción
+
+Build de demostración, **emulación** en Chromium y WebKit a 320, 375, 390, 768 y 1366 px, con movimiento normal
+y reducido (20 combinaciones), con recorrido completo de la página en capturas de viewport.
+
+- "Sobre Luis" sin las cuatro filas de datos (retiradas del componente y del contenido); foto, presentación y
+  contacto intactos.
+- "Conoce a Luis" justo después de "Sobre Luis": foto de traje azul completa (diferencia de proporción menor
+  a 0.002), 380 px de ancho en escritorio y el ancho disponible en móvil; etiqueta "Video de presentación
+  próximamente" debajo; ningún control ni botón. La imagen es diferida y reutiliza el archivo del hero: la
+  carga inicial pide las mismas imágenes que antes (logo, retrato del hero, marcas y avatar).
+- Espaciado: entre secciones, de 144 a 159 px en móvil, de 188 a 203 en tableta y de 259 a 270 en escritorio,
+  bajó a 113 a 127, 146 a 155 y 200 a 210 (escala `--section-y` y `--block-y`). Sin huecos internos
+  injustificados.
+- Apariciones: ningún elemento invisible en pantalla durante el recorrido ni al llegar por anclas (el
+  contenido de la sección de destino se muestra mientras se desplaza); con movimiento reducido todo es
+  visible desde el inicio.
+- Sin guiones largos como puntuación en los textos de las tres páginas (prueba E2E y unitaria).
+
 ## Problemas encontrados y corregidos
 
 1. **Hidratación fallida** (React #418): un `<div>` (avatar) dentro de un `<p>`. Corregido; script de

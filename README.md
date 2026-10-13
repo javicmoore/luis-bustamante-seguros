@@ -167,7 +167,8 @@ aviso de privacidad.
   escritorio (en móvil y tableta la foto queda limpia, con el nombre debajo como texto);
   simulador como instrumento (controles claros + resultados oscuros); formulario en tarjeta blanca sobre azul;
   beneficios como lista editorial numerada y servicios en mosaico de tarjetas ilustradas con ligera inclinación;
-  Sobre Luis con retrato desplazado y datos en lista.
+  Sobre Luis con retrato y presentación; "Conoce a Luis" (video de presentación) en azul profundo, con el medio
+  en su proporción original.
 - Movimiento: entrada del hero en CSS (600–900 ms, sin intro); secciones que aparecen una vez al acercarse;
   transiciones cortas en el gráfico; header que cambia de superficie con un observador (sin escuchar scroll);
   carrusel lento con pausa. Con movimiento reducido no hay animaciones.

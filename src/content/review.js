@@ -21,6 +21,12 @@ export const copyReview = [
     note: 'Párrafo sobre su forma de trabajar (promesa de proceso).',
   },
   {
+    id: 'conoce-a-luis',
+    file: 'src/content/copy.js → videoCopy',
+    status: 'pendiente',
+    note: 'Título y texto breve de la sección del video de presentación ("Conoce a Luis").',
+  },
+  {
     id: 'formulario',
     file: 'src/content/copy.js → formCopy',
     status: 'pendiente',

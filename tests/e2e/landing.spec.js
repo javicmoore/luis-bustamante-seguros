@@ -32,6 +32,33 @@ test.describe('estructura y contenido', () => {
     expect(body).not.toMatch(/Lucy/i);
   });
 
+  test('"Sobre Luis" sin las filas de datos; conserva foto, presentación y contacto', async ({ page }) => {
+    await open(page, '/');
+    const about = page.locator('#sobre-luis');
+    await expect(about.locator('dl, dt, dd, .about__facts')).toHaveCount(0);
+    for (const term of ['Ubicación', 'Alcance', 'Especialidad', 'Cotización y asesoría']) {
+      await expect(about.getByText(term, { exact: true })).toHaveCount(0);
+    }
+    await expect(about.locator('.about__portrait img')).toHaveCount(1);
+    await expect(about.locator('#about-title')).toHaveText('Hola, soy Luis Bustamante.');
+    await expect(about.getByRole('link', { name: /Solicitar asesoría/ })).toBeVisible();
+    await expect(about.locator('a[href*="wa.me"]')).toHaveCount(1);
+  });
+
+  test('sin guiones largos como puntuación en los textos de las páginas', async ({ page }) => {
+    const dashes = new RegExp(`[${String.fromCharCode(0x2014)}${String.fromCharCode(0x2013)}]`);
+    for (const path of ['/', '/aviso-de-privacidad', '/no-existe']) {
+      await open(page, path);
+      const text = await page.evaluate(() => {
+        const clone = document.body.cloneNode(true);
+        clone.querySelectorAll('script, style, template').forEach((el) => el.remove());
+        return `${document.title} ${clone.textContent}`;
+      });
+      const hits = text.split(/(?<=[.!?])\s+/).filter((sentence) => dashes.test(sentence));
+      expect(hits, path).toEqual([]);
+    }
+  });
+
   test('identidad y teléfonos vigentes en todo el sitio', async ({ page }) => {
     for (const path of ['/', '/aviso-de-privacidad']) {
       await open(page, path);
@@ -147,6 +174,42 @@ test.describe('hero y header en móvil', () => {
   });
 });
 
+test.describe('apariciones al navegar por anclas', () => {
+  for (const [width, height, via] of [
+    [1366, 900, 'nav'],
+    [390, 844, 'menu'],
+  ]) {
+    test(`${width}px: el contenido de la sección destino llega visible (sin huecos por animación)`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await open(page, '/');
+      for (const [label, id] of [
+        ['Sobre Luis', 'sobre-luis'],
+        ['FAQ', 'faq'],
+        ['Simulador', 'simulador'],
+      ]) {
+        if (via === 'menu') {
+          await page.locator('.site-header__toggle').click();
+          await page.locator('#mobile-menu').getByRole('link', { name: new RegExp(label) }).click();
+        } else {
+          await page.locator('.site-header__nav').getByRole('link', { name: label }).click();
+        }
+        await page.waitForTimeout(1300);
+        const hidden = await page.evaluate((sid) => {
+          const section = document.getElementById(sid);
+          return [...section.querySelectorAll('[data-reveal]')]
+            .filter((el) => {
+              const r = el.getBoundingClientRect();
+              return r.bottom > 0 && r.top < innerHeight;
+            })
+            .filter((el) => Number(getComputedStyle(el).opacity) < 0.99)
+            .map((el) => el.className || el.tagName);
+        }, id);
+        expect(hidden, `${label}`).toEqual([]);
+      }
+    });
+  }
+});
+
 test.describe('header y navegación', () => {
   test('cambia de superficie al avanzar sin cambiar de altura', async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -225,7 +288,7 @@ test.describe('simulador', () => {
     await expect(page.locator('#sim-title')).toHaveText('El costo de esperar');
     await expect(page.getByText('Descubre cómo el tiempo influye en el ahorro que puedes construir para tu futuro.')).toBeVisible();
     await expect(page.locator('label[for="sim-rate-range"]')).toHaveText('Tasa anual ilustrativa');
-    await expect(page.getByText('Tasa anual sugerida para esta simulación: 10–12 %')).toBeVisible();
+    await expect(page.getByText('Tasa anual sugerida para esta simulación: de 10 a 12 %')).toBeVisible();
     await expect(page.locator('.sim__disclaimer')).toContainText('supuesto ilustrativo indicado por Luis');
     await expect(page.locator('.sim__disclaimer')).toContainText('no representa una tasa contratada ni un rendimiento garantizado');
     await expect(page.locator('#sim-rate-input')).toHaveValue('10');

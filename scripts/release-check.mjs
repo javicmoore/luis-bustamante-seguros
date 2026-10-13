@@ -59,6 +59,8 @@ if (publishable.length === 0) {
 
 if (video.src) {
   if (!/^https:\/\//.test(video.src) && !publicFile(video.src)) blockers.push(`Video: no existe ${video.src}.`);
+  if (!(video.width > 0 && video.height > 0)) blockers.push('Video: faltan width y height reales (definen la proporción).');
+  if (video.poster && !/^https:\/\//.test(video.poster) && !publicFile(video.poster)) blockers.push(`Video: no existe el póster ${video.poster}.`);
   if (!video.poster) warnings.push('Video sin póster optimizado.');
   if (!video.captions) warnings.push('Video sin subtítulos (.vtt).');
   if (/^https:\/\//.test(video.src)) warnings.push('Video en host externo: agregar su origen a media-src en la CSP (vercel.json).');

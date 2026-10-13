@@ -8,7 +8,7 @@ Vercel se detiene a propósito (las vistas previas sí se despliegan). Todo el c
 
 | Pendiente | Qué se necesita | Dónde va |
 | --- | --- | --- |
-| Video de presentación | MP4 H.264, horizontal 16:9, 1080p, idealmente 60–90 s, subtítulos `.vtt` y póster | `public/media/` y `video` en `src/content/media.js`. Si se decide no publicar video: `video.decision = 'omitir'` |
+| Video de presentación (en edición) | Archivo final en cualquier orientación (vertical u horizontal), idealmente de 60 a 90 s, con subtítulos `.vtt` | La sección "Conoce a Luis" ya está lista justo después de "Sobre Luis". Mientras tanto, en demo muestra la foto de traje azul con "Video de presentación próximamente" (sin controles). Pasos para activarlo, abajo. Si se decide no publicar video: `video.decision = 'omitir'` |
 | Testimonios | Testimonios reales con autorización por escrito: texto, nombre como desean aparecer y contexto opcional | `src/content/testimonials.js` con `authorized: true` y referencia de la autorización. Si se publica sin ellos: `testimonialsDecision = 'omitir'` |
 | Logo en vector (opcional) | SVG del logotipo, si existe | Hoy se usa el PNG original sin fondo blanco; un SVG daría bordes más nítidos en pantallas grandes |
 | Imagen publicitaria (opcional) | La pieza que inspiró el fondo del hero, si se quiere replicar con más fidelidad | No estaba en `assets-originales/`: el fondo se compuso con elementos del propio logo (barras y flecha ascendente) |
@@ -18,6 +18,25 @@ azul), retrato de "Sobre Luis" (camisa azul), logo (header, footer, favicon e im
 escala y compresión; sin retoque ni versiones generativas.
 
 Nunca usar fotos de terceros ni caras generadas en lugar de Luis.
+
+### Activar el video de presentación
+
+1. Conservar el original intacto (por ejemplo en `assets-originales/luis/`) y preparar una copia web sin
+   degradar notablemente rostro, voz ni imagen, limitando el lado mayor a 1920 px y sin recortar:
+
+   ```
+   ffmpeg -i ORIGINAL -c:v libx264 -preset slow -crf 21 -profile:v high -pix_fmt yuv420p \
+     -vf "scale=w='min(1920,iw)':h='min(1920,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2" \
+     -c:a aac -b:a 128k -movflags +faststart public/media/luis-presentacion.mp4
+   ffmpeg -ss 2 -i public/media/luis-presentacion.mp4 -frames:v 1 -q:v 3 public/media/luis-presentacion-poster.jpg
+   ```
+
+   (elegir para la miniatura un cuadro representativo del propio video).
+2. En `src/content/media.js` → `video`: `src`, `width` y `height` reales del archivo web (fijan proporción y
+   orientación), `poster` y, si existen, `captions`.
+3. El reproductor usa controles nativos, `playsInline` y `preload="none"`, sin reproducción automática; archivo y
+   miniatura se piden solo al acercarse a la sección. Verificar reproducción y pausa en Safari (iPhone) y Chrome
+   (Android) antes de publicar.
 
 ## 2. Marcas del carrusel
 

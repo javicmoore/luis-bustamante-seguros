@@ -62,7 +62,11 @@
   --space-6: 2rem;
   --space-7: 3rem;
   --space-8: 4rem;
-  --section-y: clamp(4.5rem, 3rem + 6vw, 8.5rem);
+  /* Escala de separación: --section-y entre secciones (56 px en teléfono, ~70 px en tableta,
+     ~100 px en escritorio, por lado) y --block-y entre bloques grandes dentro de una sección
+     (encabezado y contenido, contenido y cierre). */
+  --section-y: clamp(3.5rem, 2rem + 5vw, 6.5rem);
+  --block-y: clamp(2rem, 1.25rem + 2.6vw, 3.25rem);
 
   --container: 1200px;
   --container-wide: 1320px;

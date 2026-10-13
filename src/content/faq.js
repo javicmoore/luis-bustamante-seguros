@@ -37,7 +37,7 @@ export const faqs = [
     id: 'otros-ahorros',
     question: '¿Puedo consultar si ya tengo otros ahorros o seguros?',
     answer: [
-      'Sí. Puedes contarle a Luis qué tienes hoy —un seguro, un plan de ahorro o una inversión— para revisar tus objetivos con esa información en mente.',
+      'Sí. Puedes contarle a Luis qué tienes hoy (un seguro, un plan de ahorro o una inversión) para revisar tus objetivos con esa información en mente.',
     ],
   },
   {

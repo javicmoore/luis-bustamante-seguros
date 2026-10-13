@@ -18,7 +18,7 @@
 .sim__instrument {
   display: grid;
   gap: 1.25rem;
-  margin-top: clamp(2rem, 4vw, 3.25rem);
+  margin-top: var(--block-y);
 }
 
 /* ---------- Controles ---------- */

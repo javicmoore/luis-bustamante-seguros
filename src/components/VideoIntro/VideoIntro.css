@@ -1,103 +1,104 @@
+/* Conoce a Luis: video de presentación (o, mientras está en edición, la foto con la etiqueta
+   "próximamente"). Azul profundo entre "Sobre Luis" (claro) y la FAQ (blanca).
+   El medio conserva su proporción: nunca se estira ni se recorta. Si es vertical, su ancho se
+   limita en escritorio y el texto queda a un lado; si es horizontal, va centrado debajo. */
 .video-intro {
-  background: var(--white);
+  background:
+    radial-gradient(70% 60% at 85% 15%, rgb(46 84 122 / 0.45), transparent 65%),
+    radial-gradient(50% 50% at 0% 100%, rgb(200 128 64 / 0.08), transparent 70%),
+    var(--navy-950);
+}
+
+.video-intro__grid {
+  display: grid;
+  gap: var(--block-y);
 }
 
 .video-intro__head {
   display: grid;
   gap: 1rem;
-  max-width: 40rem;
-  margin-bottom: clamp(2rem, 4vw, 3rem);
+  max-width: 34rem;
 }
 
-.video-intro__frame {
+.video-intro__figure {
+  justify-self: center;
+  width: min(100%, 880px);
+  margin: 0;
+}
+
+.video-intro--vertical .video-intro__figure {
+  width: min(100%, 420px);
+}
+
+.video-intro__screen {
   position: relative;
-  aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: var(--radius-lg);
-  background: var(--navy-900);
-  box-shadow: var(--shadow-lg);
+  background: var(--ink-deep);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.08),
+    0 30px 70px -30px rgb(0 0 0 / 0.65);
 }
 
 .video-intro__media,
-.video-intro__poster {
+.video-intro__picture,
+.video-intro__picture img {
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
 }
 
-.video-intro__facade {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: var(--navy-900);
-  --focus: var(--gold-400);
+.video-intro__media {
+  background: var(--ink-deep);
 }
 
-.video-intro__facade:focus-visible {
-  outline-offset: -6px;
+.video-intro__soon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgb(255 255 255 / 0.72);
 }
 
-.video-intro__poster {
-  position: absolute;
-  inset: 0;
-}
-
-.video-intro__play {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 84px;
-  height: 84px;
+.video-intro__soon-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  flex: none;
   border-radius: 50%;
-  background: var(--gold-500);
-  color: var(--ink-deep);
-  transition: transform 0.4s var(--ease-spring);
+  background: var(--gold-400);
 }
 
-.video-intro__play .icon {
-  width: 2rem;
-  height: 2rem;
-  margin-left: 4px;
-  fill: currentColor;
+.video-intro .dev-note {
+  margin-top: 1rem;
 }
 
-@media (hover: hover) {
-  .video-intro__facade:hover .video-intro__play {
-    transform: scale(1.08);
+/* Tableta: el medio va centrado debajo del texto, así que el texto también se centra. */
+@media (min-width: 640px) and (max-width: 959px) {
+  .video-intro__head {
+    justify-self: center;
+    justify-items: center;
+    text-align: center;
   }
 }
 
-.video-intro__frame--pending {
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-  border: 2px dashed var(--slate-300);
-  background: var(--mist);
-  box-shadow: none;
-}
+@media (min-width: 960px) {
+  .video-intro--vertical .video-intro__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+    align-items: center;
+    column-gap: clamp(3rem, 7vw, 6.5rem);
+  }
 
-.video-intro__pending {
-  display: grid;
-  justify-items: center;
-  gap: 1rem;
-  max-width: 34rem;
-  text-align: center;
-}
+  .video-intro--vertical .video-intro__figure {
+    width: 100%;
+  }
 
-.video-intro__pending-title {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: var(--title-sm);
-  color: var(--slate-500);
-}
-
-@media (max-width: 639px) {
-  .video-intro__frame--pending {
-    aspect-ratio: auto;
-    min-height: 16rem;
+  .video-intro:not(.video-intro--vertical) .video-intro__head {
+    justify-self: center;
+    justify-items: center;
+    text-align: center;
   }
 }

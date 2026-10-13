@@ -23,10 +23,10 @@ export const simulatorCopy = {
   rateLabel: 'Tasa anual ilustrativa',
   contributionHelp: 'Aportación mínima: $2,000 MXN al mes.',
   contributionMin: 'La aportación mínima es de $2,000 MXN mensuales.',
-  rateHelp: 'Tasa anual sugerida para esta simulación: 10–12 %',
+  rateHelp: 'Tasa anual sugerida para esta simulación: de 10 a 12 %',
   // Supuesto indicado por Luis (no es una tasa contratada).
   rateAssumption:
-    'El rango de 10–12 % es un supuesto ilustrativo indicado por Luis; no representa una tasa contratada ni un rendimiento garantizado.',
+    'El rango de 10 a 12 % es un supuesto ilustrativo indicado por Luis; no representa una tasa contratada ni un rendimiento garantizado.',
   contributedLabel: 'Aportaciones acumuladas',
   scenarioLabel: 'Escenario ilustrativo',
   differenceLabel: 'Diferencia ilustrativa',
@@ -81,18 +81,17 @@ export const aboutCopy = {
   // Texto propuesto (pendiente de aprobación de Luis).
   approach:
     'Mi forma de trabajar empieza por escuchar qué quieres proteger o lograr. Después revisamos juntos las opciones disponibles y te explico cada una con claridad, para que decidas con calma.',
-  facts: [
-    { term: 'Ubicación', detail: 'Mexicali, Baja California' },
-    { term: 'Alcance', detail: 'Personas de todo México' },
-    { term: 'Especialidad', detail: 'Seguros, ahorro, retiro y educación' },
-    { term: 'Cotización y asesoría', detail: 'Gratuitas' },
-  ],
 };
 
 export const videoCopy = {
   eyebrow: 'En sus palabras',
-  title: 'Conoce a Luis antes de platicar.',
-  playLabel: 'Reproducir el video de presentación de Luis',
+  title: 'Conoce a Luis',
+  // Texto propuesto (pendiente de aprobación de Luis).
+  lead: 'Un video breve para que conozcas a Luis y su forma de trabajar antes de platicar.',
+  // Etiqueta accesible del reproductor cuando exista el video.
+  videoLabel: 'Video de presentación de Luis Bustamante',
+  // Marcador visible solo en demo y desarrollo mientras el video está en edición.
+  soon: 'Video de presentación próximamente',
 };
 
 export const testimonialsCopy = {

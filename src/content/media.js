@@ -132,15 +132,25 @@ export const media = {
   },
 };
 
-// Video de presentación. preload="none" + póster: no se descarga hasta que el visitante
-// decide reproducirlo.
+// Video de presentación ("Conoce a Luis"). Todavía en edición: sin src, la sección muestra la
+// foto de traje azul con la etiqueta "Video de presentación próximamente" solo en demo y en
+// desarrollo; en producción no se publica. Para activarlo (ver docs/PENDIENTES.md):
+//   src     copia web del video final (MP4 H.264 + AAC), p. ej. '/media/luis-presentacion.mp4'
+//           (o URL de un host autorizado; agregar su origen a media-src en vercel.json)
+//   width / height  dimensiones reales del archivo: fijan la proporción y la orientación
+//           (vertical si height > width); nunca se estira ni se recorta.
+//   poster  miniatura tomada del propio video, mismas proporciones, p. ej.
+//           '/media/luis-presentacion-poster.jpg'
+//   captions subtítulos .vtt en español (opcional, recomendado)
+// El reproductor usa controles nativos, playsInline y preload="none", sin reproducción
+// automática; archivo y póster se piden solo cuando el visitante se acerca a la sección.
 export const video = {
-  src: null, // '/media/luis-presentacion.mp4' (o URL de un host autorizado; actualizar CSP)
+  src: null,
   type: 'video/mp4',
-  poster: null, // imagen optimizada (WebP/JPG) con las mismas proporciones
-  width: 1920,
-  height: 1080,
-  captions: null, // '/media/luis-presentacion.es.vtt'
+  width: null,
+  height: null,
+  poster: null,
+  captions: null,
   // Si Javier decide publicar sin video, cambiar a 'omitir' (decisión explícita).
   decision: null,
 };
