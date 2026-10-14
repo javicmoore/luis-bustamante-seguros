@@ -25,7 +25,8 @@
     "qa:perf": "node scripts/qa/perf.mjs",
     "qa:hydration": "node scripts/qa/hydration.mjs",
     "logos": "node scripts/optimize-logos.mjs",
-    "luis:assets": "node scripts/prepare-luis-assets.mjs"
+    "luis:assets": "node scripts/prepare-luis-assets.mjs",
+    "video:poster": "node scripts/prepare-video-poster.mjs"
   },
   "dependencies": {
     "react": "^19.3.0",

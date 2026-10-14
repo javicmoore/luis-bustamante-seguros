@@ -73,7 +73,7 @@ test.describe('despliegue de demostración', () => {
     }
   });
 
-  test('"Conoce a Luis" va justo después de "Sobre Luis" con la foto y la etiqueta, sin controles', async ({ page }) => {
+  test('"Conoce a Luis" va justo después de "Sobre Luis" con el video y su miniatura, sin desbordar', async ({ page }) => {
     for (const [width, height] of [
       [320, 640],
       [390, 844],
@@ -86,20 +86,16 @@ test.describe('despliegue de demostración', () => {
       expect(ids[ids.indexOf('sobre-luis') + 1]).toBe('video');
       const section = page.locator('#video');
       await expect(section.locator('#video-title')).toHaveText('Conoce a Luis');
-      await expect(section.getByText('Video de presentación próximamente')).toBeVisible();
-      await expect(section.locator('video, button, [controls]')).toHaveCount(0);
-      const img = section.locator('.video-intro__picture img');
-      await expect(img).toHaveAttribute('loading', 'lazy');
+      await expect(section).not.toContainText('próximamente');
       await section.scrollIntoViewIfNeeded();
-      await expect.poll(() => img.evaluate((el) => el.complete && el.naturalWidth > 0)).toBe(true);
-      const m = await img.evaluate((el) => {
-        const r = el.getBoundingClientRect();
-        return { w: r.width, h: r.height, natural: el.naturalWidth / el.naturalHeight, container: el.closest('.container').clientWidth };
+      const video = section.locator('video[controls]');
+      await expect(video).toHaveAttribute('poster', '/media/luis-presentacion-poster.jpg');
+      const m = await video.evaluate((v) => {
+        const r = v.getBoundingClientRect();
+        return { ratio: r.width / r.height, width: r.width, container: v.closest('.container').clientWidth };
       });
-      // Foto completa, sin estirar ni recortar.
-      expect(Math.abs(m.w / m.h - m.natural)).toBeLessThan(0.01);
-      if (width >= 960) expect(m.w).toBeLessThanOrEqual(380.5);
-      else expect(m.w).toBeGreaterThanOrEqual(Math.min(420, m.container - 40) - 0.5);
+      expect(Math.abs(m.ratio - 16 / 9)).toBeLessThan(0.01);
+      expect(m.width).toBeLessThanOrEqual(Math.min(880, m.container) + 0.5);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
     }
   });

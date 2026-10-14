@@ -8,7 +8,7 @@ Vercel se detiene a propósito (las vistas previas sí se despliegan). Todo el c
 
 | Pendiente | Qué se necesita | Dónde va |
 | --- | --- | --- |
-| Video de presentación (en edición) | Archivo final en cualquier orientación (vertical u horizontal), idealmente de 60 a 90 s, con subtítulos `.vtt` | La sección "Conoce a Luis" ya está lista justo después de "Sobre Luis". Mientras tanto, en demo muestra la foto de traje azul con "Video de presentación próximamente" (sin controles). Pasos para activarlo, abajo. Si se decide no publicar video: `video.decision = 'omitir'` |
+| Subtítulos del video (recomendado) | Archivo `.vtt` en español del video de presentación | `public/media/` y `video.captions` en `src/content/media.js`. El video ya está integrado; sin subtítulos, quien no puede escucharlo no accede a su contenido |
 | Testimonios | Testimonios reales con autorización por escrito: texto, nombre como desean aparecer y contexto opcional | `src/content/testimonials.js` con `authorized: true` y referencia de la autorización. Si se publica sin ellos: `testimonialsDecision = 'omitir'` |
 | Logo en vector (opcional) | SVG del logotipo, si existe | Hoy se usa el PNG original sin fondo blanco; un SVG daría bordes más nítidos en pantallas grandes |
 | Imagen publicitaria (opcional) | La pieza que inspiró el fondo del hero, si se quiere replicar con más fidelidad | No estaba en `assets-originales/`: el fondo se compuso con elementos del propio logo (barras y flecha ascendente) |
@@ -19,24 +19,21 @@ escala y compresión; sin retoque ni versiones generativas.
 
 Nunca usar fotos de terceros ni caras generadas en lugar de Luis.
 
-### Activar el video de presentación
+### Video de presentación (integrado el 13 de octubre de 2026)
 
-1. Conservar el original intacto (por ejemplo en `assets-originales/luis/`) y preparar una copia web sin
-   degradar notablemente rostro, voz ni imagen, limitando el lado mayor a 1920 px y sin recortar:
-
-   ```
-   ffmpeg -i ORIGINAL -c:v libx264 -preset slow -crf 21 -profile:v high -pix_fmt yuv420p \
-     -vf "scale=w='min(1920,iw)':h='min(1920,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2" \
-     -c:a aac -b:a 128k -movflags +faststart public/media/luis-presentacion.mp4
-   ffmpeg -ss 2 -i public/media/luis-presentacion.mp4 -frames:v 1 -q:v 3 public/media/luis-presentacion-poster.jpg
-   ```
-
-   (elegir para la miniatura un cuadro representativo del propio video).
-2. En `src/content/media.js` → `video`: `src`, `width` y `height` reales del archivo web (fijan proporción y
-   orientación), `poster` y, si existen, `captions`.
-3. El reproductor usa controles nativos, `playsInline` y `preload="none"`, sin reproducción automática; archivo y
-   miniatura se piden solo al acercarse a la sección. Verificar reproducción y pausa en Safari (iPhone) y Chrome
-   (Android) antes de publicar.
+- Original sin cambios: `assets-originales/luis/Luis_Bustamante_video_landing_web_v2.mp4` (H.264 High 3.1 + AAC
+  estéreo, 1280×720, 30 fps, 2:50, faststart, 25.8 MB). Ya venía listo para web, así que la copia publicada
+  (`public/media/luis-presentacion.mp4`) es idéntica: recomprimir solo restaría calidad de imagen y voz.
+- Miniatura original: `assets-originales/luis/Luis_Bustamante_video_landing_web_v2-miniatura.png` (1672×941).
+  Póster web completo, sin recortes: `public/media/luis-presentacion-poster.jpg` (1600×900, 127 KB), con
+  `npm run video:poster -- <ruta>`.
+- Reproductor nativo: controles, audio, pausa y pantalla completa; `playsInline`, `preload="none"` y sin
+  reproducción automática. Al abrir la página no se descarga nada del video; el póster se pide al acercarse a
+  la sección y el archivo, por partes, solo al reproducir.
+- Consumo: cada reproducción completa transfiere hasta 25.8 MB. Revisar el límite de transferencia del plan de
+  Vercel si el tráfico crece; si hiciera falta, servir el video desde un host de video autorizado (y agregar
+  su origen a `media-src` en `vercel.json`).
+- Pendiente: probar reproducción, audio y pantalla completa en Safari (iPhone) y Chrome (Android).
 
 ## 2. Marcas del carrusel
 

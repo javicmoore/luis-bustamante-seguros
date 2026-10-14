@@ -137,6 +137,24 @@ y reducido (20 combinaciones), con recorrido completo de la página en capturas 
   visible desde el inicio.
 - Sin guiones largos como puntuación en los textos de las tres páginas (prueba E2E y unitaria).
 
+## Video de presentación integrado (13 de octubre)
+
+**Emulación** en el build de demostración; no sustituye la prueba en teléfonos físicos.
+
+| Comprobación | Chromium | Chrome | WebKit (Windows) |
+| --- | --- | --- | --- |
+| Al abrir la página no se pide el video ni el póster | ✓ | ✓ | ✓ |
+| Póster completo (1600×900) al acercarse; caja 16:9 reservada antes de reproducir | ✓ | ✓ | ✓ |
+| Controles nativos, `playsInline`, `preload="none"`, sin autoplay ni silencio forzado | ✓ | ✓ | ✓ |
+| Reproduce al pedirlo el visitante, imagen 1280×720 y audio decodificado | ✓ | ✓ | imagen ✓, audio no medible |
+| Pausa y pantalla completa | ✓ | ✓ | ✓ |
+| 320, 375, 390, 768 y 1366 px sin desbordamiento; movimiento normal y reducido | ✓ | ✓ | ✓ |
+
+- Bytes medidos en Chrome a 390 px: 0 MB de video al abrir la página; 127 KB de póster al llegar a la sección;
+  unos 4 MB tras 5 s de reproducción y ninguna descarga adicional después de pausar.
+- WebKit para Windows reproduce con sus propios componentes y no expone el audio decodificado ni las
+  peticiones del video: el audio en Safari debe comprobarse en un iPhone.
+
 ## Problemas encontrados y corregidos
 
 1. **Hidratación fallida** (React #418): un `<div>` (avatar) dentro de un `<p>`. Corregido; script de

@@ -174,6 +174,80 @@ test.describe('hero y header en móvil', () => {
   });
 });
 
+test.describe('"Conoce a Luis": video de presentación', () => {
+  test('carga diferida, póster completo, 16:9 reservado y sin reproducción automática', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const requested = [];
+    page.on('request', (r) => /luis-presentacion/.test(r.url()) && requested.push(r.url()));
+    await open(page, '/');
+    const ids = await page.$$eval('main > section', (els) => els.map((el) => el.id));
+    expect(ids[ids.indexOf('sobre-luis') + 1]).toBe('video');
+    const video = page.locator('#video video');
+    await expect(video).toHaveCount(1);
+    // Al abrir la página no se pide ni el video ni el póster.
+    await page.waitForTimeout(800);
+    expect(requested).toEqual([]);
+    await expect(video).not.toHaveAttribute('src', /./);
+
+    await page.locator('#video').scrollIntoViewIfNeeded();
+    await expect(video).toHaveAttribute('poster', '/media/luis-presentacion-poster.jpg');
+    await expect(video).toHaveAttribute('src', '/media/luis-presentacion.mp4');
+    const state = await video.evaluate((v) => {
+      const r = v.getBoundingClientRect();
+      return {
+        controls: v.controls,
+        playsInline: v.playsInline,
+        preload: v.preload,
+        autoplay: v.autoplay,
+        muted: v.muted,
+        paused: v.paused,
+        ratio: r.width / r.height,
+        label: v.getAttribute('aria-label'),
+      };
+    });
+    expect(state).toMatchObject({ controls: true, playsInline: true, preload: 'none', autoplay: false, muted: false, paused: true, label: 'Video de presentación de Luis Bustamante' });
+    expect(Math.abs(state.ratio - 16 / 9)).toBeLessThan(0.01);
+    await expect(page.locator('#video')).not.toContainText('próximamente');
+    // Con preload="none" el archivo no se descarga hasta que el visitante lo reproduce.
+    await page.waitForTimeout(800);
+    expect(requested.filter((u) => u.endsWith('.mp4'))).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
+
+  test('se reproduce con audio al pedirlo el visitante y se pausa', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 900 });
+    await open(page, '/');
+    await page.locator('#video').scrollIntoViewIfNeeded();
+    const video = page.locator('#video video');
+    await expect(video).toHaveAttribute('src', /luis-presentacion\.mp4/);
+    // Gesto real del visitante: un clic que llama a play() (los controles nativos no son accesibles por selector).
+    await page.evaluate(() => {
+      const b = document.createElement('button');
+      b.id = 'e2e-play';
+      b.textContent = 'reproducir';
+      b.addEventListener('click', () => document.querySelector('#video video').play());
+      document.getElementById('video').prepend(b);
+    });
+    await page.locator('#e2e-play').click();
+    await page.waitForFunction(() => document.querySelector('#video video').currentTime > 1.5, null, { timeout: 15000 });
+    const playing = await video.evaluate((v) => ({
+      size: `${v.videoWidth}x${v.videoHeight}`,
+      duration: Math.round(v.duration),
+      audio: typeof v.webkitAudioDecodedByteCount === 'number' ? v.webkitAudioDecodedByteCount > 0 : true,
+      muted: v.muted,
+    }));
+    if (test.info().project.use.browserName === 'webkit') {
+      // WebKit para Windows (Playwright) reporta el tamaño de la caja en lugar del archivo y no cuenta
+      // el audio decodificado: aquí solo se comprueba que avanza, su duración y que no está silenciado.
+      expect({ duration: playing.duration, muted: playing.muted }).toEqual({ duration: 170, muted: false });
+    } else {
+      expect(playing).toEqual({ size: '1280x720', duration: 170, audio: true, muted: false });
+    }
+    await video.evaluate((v) => v.pause());
+    await expect.poll(() => video.evaluate((v) => v.paused)).toBe(true);
+  });
+});
+
 test.describe('apariciones al navegar por anclas', () => {
   for (const [width, height, via] of [
     [1366, 900, 'nav'],

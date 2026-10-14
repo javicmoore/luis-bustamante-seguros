@@ -145,11 +145,17 @@ export const media = {
 // El reproductor usa controles nativos, playsInline y preload="none", sin reproducción
 // automática; archivo y póster se piden solo cuando el visitante se acerca a la sección.
 export const video = {
-  src: null,
+  // Original: assets-originales/luis/Luis_Bustamante_video_landing_web_v2.mp4 (sin cambios).
+  // Ya venía listo para web (H.264 High 3.1 + AAC estéreo, 1280x720, 30 fps, 2:50, faststart,
+  // 25.8 MB), así que la copia publicada es idéntica: recomprimir solo restaría calidad.
+  src: '/media/luis-presentacion.mp4',
   type: 'video/mp4',
-  width: null,
-  height: null,
-  poster: null,
+  width: 1280,
+  height: 720,
+  // Miniatura completa (16:9) entregada por Javier; original en
+  // assets-originales/luis/Luis_Bustamante_video_landing_web_v2-miniatura.png.
+  // Copia web: npm run video:poster -- <ruta-de-la-miniatura>
+  poster: '/media/luis-presentacion-poster.jpg',
   captions: null,
   // Si Javier decide publicar sin video, cambiar a 'omitir' (decisión explícita).
   decision: null,
