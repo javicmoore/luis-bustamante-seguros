@@ -4,15 +4,17 @@ import { DevNote } from '../ui/DevNote.jsx';
 import './Testimonials.css';
 
 /**
- * Testimonios reales y autorizados. Sin ellos, en desarrollo se ve la estructura vacía con
- * el pendiente; en producción la sección no se publica. Nunca se generan textos ni nombres.
+ * Testimonios reales y autorizados, entre el video y la FAQ. Tres tarjetas en escritorio y una
+ * columna en móvil, con el texto completo (sin carrusel ni recortes). Sin testimonios, en
+ * desarrollo se ve el pendiente y en producción la sección no se publica. Nunca se generan
+ * textos, nombres, fotos ni calificaciones.
  */
 export function Testimonials() {
   const items = getPublishableTestimonials();
   if (items.length === 0 && !import.meta.env.DEV) return null;
 
   return (
-    <section id="testimonios" className="section testimonials on-dark" aria-labelledby="testimonials-title">
+    <section id="testimonios" className="section testimonials" aria-labelledby="testimonials-title">
       <div className="container">
         <header className="testimonials__head" data-reveal="">
           <p className="eyebrow">{copy.eyebrow}</p>
@@ -24,13 +26,9 @@ export function Testimonials() {
         {items.length > 0 ? (
           <ul className="testimonials__list" role="list">
             {items.map((item, index) => (
-              <li
-                key={item.id}
-                className={`quote${index === 0 ? ' quote--feature' : ''}`}
-                data-reveal=""
-                data-reveal-delay={String(Math.min(index + 1, 3))}
-              >
-                <figure>
+              <li key={item.id} className="quote" data-reveal="" data-reveal-delay={String(Math.min(index + 1, 3))}>
+                <figure className="quote__card">
+                  <span className="quote__mark" aria-hidden="true" />
                   <blockquote>
                     <p>{item.quote}</p>
                   </blockquote>

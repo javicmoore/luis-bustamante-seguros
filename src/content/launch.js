@@ -2,6 +2,12 @@
 // (no por suposición). `npm run check:release` y el build de producción en Vercel las exigen.
 export const launchChecklist = [
   {
+    id: 'testimonios-autorizacion',
+    done: false,
+    label:
+      'Constancia escrita de que Karla G., Sergio C. y Alberto G. autorizan publicar su testimonio con ese nombre y contexto (ver src/content/testimonials.js).',
+  },
+  {
     id: 'plantilla-whatsapp-interes',
     done: false,
     label:

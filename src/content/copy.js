@@ -96,7 +96,7 @@ export const videoCopy = {
 
 export const testimonialsCopy = {
   eyebrow: 'Testimonios',
-  title: 'Lo que dicen quienes ya platicaron con Luis.',
+  title: 'Lo que comparten mis clientes',
 };
 
 export const faqCopy = {

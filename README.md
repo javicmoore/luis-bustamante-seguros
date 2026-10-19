@@ -4,7 +4,7 @@ Sitio de captación para Luis Bustamante, agente de seguros y asesor financiero 
 para todo México. React 19 + Vite 8, HTML prerenderizado y funciones de Vercel para el formulario.
 
 > **Estado: versión de trabajo. No está lista para recibir prospectos reales.** El envío a WhatsApp funciona
-> solo con el proveedor simulado; faltan testimonios, datos del aviso de privacidad, dominio, la
+> solo con el proveedor simulado; faltan la constancia de autorización de los testimonios, datos del aviso de privacidad, dominio, la
 > plantilla de WhatsApp con el interés del prospecto y la configuración de Twilio/Upstash. Ver [`docs/PENDIENTES.md`](docs/PENDIENTES.md) o
 > ejecutar `npm run check:release`.
 

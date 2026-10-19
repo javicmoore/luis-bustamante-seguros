@@ -9,7 +9,7 @@ Vercel se detiene a propósito (las vistas previas sí se despliegan). Todo el c
 | Pendiente | Qué se necesita | Dónde va |
 | --- | --- | --- |
 | Subtítulos del video (recomendado) | Archivo `.vtt` en español del video de presentación | `public/media/` y `video.captions` en `src/content/media.js`. El video ya está integrado; sin subtítulos, quien no puede escucharlo no accede a su contenido |
-| Testimonios | Testimonios reales con autorización por escrito: texto, nombre como desean aparecer y contexto opcional | `src/content/testimonials.js` con `authorized: true` y referencia de la autorización. Si se publica sin ellos: `testimonialsDecision = 'omitir'` |
+| Constancia de testimonios | Autorización por escrito de Karla G., Sergio C. y Alberto G. para publicar su testimonio con ese nombre y contexto | Los tres testimonios ya se publican (entregados por Javier el 19 oct 2026, en `src/content/testimonials.js`). Marcar `testimonios-autorizacion` en `src/content/launch.js` solo con la constancia |
 | Logo en vector (opcional) | SVG del logotipo, si existe | Hoy se usa el PNG original sin fondo blanco; un SVG daría bordes más nítidos en pantallas grandes |
 | Imagen publicitaria (opcional) | La pieza que inspiró el fondo del hero, si se quiere replicar con más fidelidad | No estaba en `assets-originales/`: el fondo se compuso con elementos del propio logo (barras y flecha ascendente) |
 

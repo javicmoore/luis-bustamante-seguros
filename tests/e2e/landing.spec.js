@@ -28,7 +28,9 @@ test.describe('estructura y contenido', () => {
       ['FAQ', '#faq'],
     ]);
     const body = await page.locator('body').innerText();
-    expect(body).not.toMatch(/Cómo funciona|El punto de partida/i);
+    // La sección eliminada ("Cómo funciona") no vuelve como título; el texto de un testimonio puede usar esas palabras.
+    const headings = await page.$$eval('h1, h2, h3', (els) => els.map((el) => el.textContent).join(' | '));
+    expect(headings).not.toMatch(/Cómo funciona|El punto de partida/i);
     expect(body).not.toMatch(/Lucy/i);
   });
 
@@ -246,6 +248,50 @@ test.describe('"Conoce a Luis": video de presentación', () => {
     await video.evaluate((v) => v.pause());
     await expect.poll(() => video.evaluate((v) => v.paused)).toBe(true);
   });
+});
+
+test.describe('testimonios', () => {
+  const QUOTES = [
+    ['Karla G.', 'Profesionista independiente', '“Antes veía el retiro como algo muy lejano. Hoy entiendo la importancia de empezar a prepararme desde ahora y construir poco a poco un respaldo para mi futuro. Agradezco a Luis por explicarme todo de manera clara y puntual.”'],
+    ['Sergio C.', 'Ingeniero', '“Lo que más me gustó de este plan es poder establecer una estrategia de ahorro acorde con mis ingresos y objetivos financieros. Desde el principio, Luis me explicó cómo funciona y qué aspectos debía considerar antes de tomar una decisión.”'],
+    ['Alberto G.', 'Empresario', '“No quería otro seguro más. Le dije a Luis que buscaba algo que me sirviera a mí. Me enseñó cómo separar mi ahorro para mi retiro y a la vez dejar una base para la educación de mis hijos. Ahora todo lo que ahorro tiene un para qué.”'],
+  ];
+
+  for (const [width, height, columns] of [
+    [320, 640, 1],
+    [375, 667, 1],
+    [390, 844, 1],
+    [768, 1024, 1],
+    [1366, 900, 3],
+  ]) {
+    test(`${width}px: después del video, texto completo, ${columns === 3 ? 'tres tarjetas' : 'una columna'} y sin desbordar`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await open(page, '/');
+      const ids = await page.$$eval('main > section', (els) => els.map((el) => el.id));
+      expect(ids.slice(ids.indexOf('video'), ids.indexOf('video') + 3)).toEqual(['video', 'testimonios', 'faq']);
+      const section = page.locator('#testimonios');
+      await expect(section.locator('#testimonials-title')).toHaveText('Lo que comparten mis clientes');
+      const cards = section.locator('li.quote');
+      await expect(cards).toHaveCount(3);
+      for (const [i, [name, context, quote]] of QUOTES.entries()) {
+        const card = cards.nth(i);
+        await expect(card.locator('blockquote p')).toHaveText(quote);
+        await expect(card.locator('figcaption .quote__name')).toHaveText(name);
+        await expect(card.locator('figcaption .quote__context')).toHaveText(context);
+      }
+      // Sin fotos, estrellas ni insignias: solo texto y atribución.
+      await expect(section.locator('img, svg, picture, [class*="star"], [class*="badge"], [class*="rating"]')).toHaveCount(0);
+      await section.scrollIntoViewIfNeeded();
+      const layout = await section.evaluate((s) => {
+        const items = [...s.querySelectorAll('li.quote')];
+        const tops = new Set(items.map((li) => Math.round(li.getBoundingClientRect().top)));
+        const clipped = [...s.querySelectorAll('blockquote p')].filter((p) => p.scrollHeight > p.clientHeight + 1 || p.scrollWidth > p.clientWidth + 1).length;
+        const overflowing = items.filter((li) => li.getBoundingClientRect().right > document.documentElement.clientWidth + 0.5).length;
+        return { rows: tops.size, clipped, overflowing, page: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+      });
+      expect(layout).toEqual({ rows: columns === 3 ? 1 : 3, clipped: 0, overflowing: 0, page: 0 });
+    });
+  }
 });
 
 test.describe('apariciones al navegar por anclas', () => {
@@ -481,6 +527,13 @@ test.describe('movimiento reducido', () => {
     expect(opacity === 'none' || opacity === 'matrix(1, 0, 0, 1, 0, 0)').toBe(true);
     await page.locator('#faq').scrollIntoViewIfNeeded();
     await expect(page.locator('#faq-title')).toBeVisible();
+  });
+
+  test('los testimonios están visibles sin animación', async ({ page }) => {
+    await open(page, '/');
+    await page.locator('#testimonios').scrollIntoViewIfNeeded();
+    const opacities = await page.$$eval('#testimonios li.quote', (els) => els.map((el) => getComputedStyle(el).opacity));
+    expect(opacities).toEqual(['1', '1', '1']);
   });
 
   test('la pregunta de interés del formulario aparece sin animación', async ({ page }) => {
