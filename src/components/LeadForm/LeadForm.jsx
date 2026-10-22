@@ -3,14 +3,20 @@ import { formCopy as copy } from '../../content/copy.js';
 import { site } from '../../content/site.js';
 import { media } from '../../content/media.js';
 import {
+  CONTACT_METHODS,
+  DEFAULT_PHONE_COUNTRY,
+  INCOME_OPTIONS,
   INTEREST_QUESTIONS,
+  INTEREST_TYPES,
   LEAD_LIMITS,
-  SAVINGS_OPTIONS,
   interestBranch,
   interestOptionsFor,
+  hasPhoneLibrary,
   normalizeName,
+  normalizePhone,
   validateLead,
 } from '../../../shared/lead-schema.js';
+import { COUNTRIES, COUNTRY_BY_CODE } from '../../../shared/countries.js';
 import { track } from '../../lib/analytics.js';
 import { IS_DEMO } from '../../lib/siteMode.js';
 import { Icon } from '../ui/Icon.jsx';
@@ -19,7 +25,7 @@ import { PrivacyDialog } from '../Privacy/PrivacyDialog.jsx';
 import { createIdempotencyTracker, submitLead, wait } from './submitLead.js';
 import './LeadForm.css';
 
-const FIELDS = ['name', 'age', 'phone', 'savings', 'interest', 'consent'];
+const FIELDS = ['name', 'age', 'contactMethod', 'email', 'phoneCountry', 'phone', 'income', 'interestType', 'interest', 'consent'];
 
 const MESSAGES = {
   name: {
@@ -33,12 +39,30 @@ const MESSAGES = {
     invalid: 'Escribe tu edad en números, por ejemplo 35.',
     out_of_range: `La asesoría es para personas de ${LEAD_LIMITS.ageMin} a ${LEAD_LIMITS.ageMax} años.`,
   },
-  phone: {
-    required: 'Escribe un teléfono de contacto.',
-    invalid: 'Escribe un teléfono válido de 10 dígitos.',
+  contactMethod: {
+    required: 'Elige cómo prefieres que Luis te contacte.',
+    invalid: 'Elige una de las opciones.',
   },
-  savings: {
-    required: 'Elige una opción; cualquier respuesta es válida.',
+  email: {
+    required: 'Escribe tu correo electrónico.',
+    invalid: 'Escribe un correo válido, por ejemplo nombre@correo.com.',
+    not_allowed: 'Elegiste teléfono como medio de contacto.',
+  },
+  phoneCountry: {
+    invalid: 'Elige un país de la lista.',
+  },
+  phone: {
+    required: 'Escribe tu número de teléfono.',
+    // El texto de "invalid" depende del país (ver messageFor).
+    invalid: 'Escribe un número válido para el país elegido.',
+    not_allowed: 'Elegiste correo como medio de contacto.',
+  },
+  income: {
+    required: 'Elige el rango de tus ingresos mensuales.',
+    invalid: 'Elige una de las opciones.',
+  },
+  interestType: {
+    required: 'Elige qué te interesa.',
     invalid: 'Elige una de las opciones.',
   },
   interest: {
@@ -59,8 +83,12 @@ const INTEREST_REQUIRED = {
 const FIELD_LABELS = {
   name: copy.nameLabel,
   age: copy.ageLabel,
+  contactMethod: 'Medio de contacto',
+  email: copy.emailLabel,
+  phoneCountry: copy.phoneCountryLabel,
   phone: copy.phoneLabel,
-  savings: 'Ahorro o retiro',
+  income: 'Ingresos mensuales',
+  interestType: 'Qué te interesa',
   interest: 'Interés',
   consent: 'Autorización de contacto',
 };
@@ -96,7 +124,58 @@ const ERROR_COPY = {
   },
 };
 
-const INITIAL = { name: '', age: '', phone: '', savings: '', interest: '', consent: false, website: '' };
+const INITIAL = {
+  name: '',
+  age: '',
+  contactMethod: '',
+  email: '',
+  phoneCountry: DEFAULT_PHONE_COUNTRY,
+  phone: '',
+  income: '',
+  interestType: '',
+  interest: '',
+  consent: false,
+  website: '',
+};
+
+/** Solo viaja el dato del medio elegido: nunca información oculta del otro medio. */
+function buildPayload(values) {
+  const payload = {
+    name: values.name,
+    age: values.age,
+    contactMethod: values.contactMethod,
+    income: values.income,
+    interestType: values.interestType,
+    interest: values.interest,
+    consent: values.consent,
+    website: values.website,
+  };
+  if (values.contactMethod === 'email') payload.email = values.email;
+  if (values.contactMethod === 'phone') {
+    payload.phoneCountry = values.phoneCountry;
+    payload.phone = values.phone;
+  }
+  return payload;
+}
+
+/**
+ * Un número pegado con su prefijo internacional ("+34 612…", "0052 686…") se reparte en país y
+ * número nacional, así el prefijo nunca aparece dos veces. Solo si el número es válido.
+ */
+function splitInternational(raw, country) {
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('+') && !trimmed.startsWith('00')) return null;
+  const parsed = normalizePhone(trimmed, country);
+  if (!parsed || !COUNTRY_BY_CODE[parsed.country]) return null;
+  return { phoneCountry: parsed.country, phone: parsed.e164.slice(COUNTRY_BY_CODE[parsed.country].dial.length + 1) };
+}
+
+// Reglas telefónicas internacionales: se cargan una sola vez, al empezar a usar el formulario.
+let phoneLibPromise = null;
+const loadPhoneLibrary = () => {
+  if (!phoneLibPromise) phoneLibPromise = import('../../../shared/phone-lib.js');
+  return phoneLibPromise;
+};
 
 // Suscripción vacía: en el servidor (y durante la hidratación) devuelve false; en el cliente, true.
 const subscribeNoop = () => () => {};
@@ -121,6 +200,10 @@ function DirectContact({ className = '' }) {
         Escribir por WhatsApp
         <span className="visually-hidden"> (se abre en una pestaña nueva)</span>
       </a>
+      <a href={site.email.href}>
+        <Icon name="mail" />
+        {site.email.address}
+      </a>
     </span>
   );
 }
@@ -138,6 +221,7 @@ export function LeadForm() {
   const keyFor = useRef(null);
   const summaryRef = useRef(null);
   const resultRef = useRef(null);
+  const privacyButtonRef = useRef(null);
   // Foco tras una respuesta asíncrona: se aplica en un efecto, cuando el elemento ya existe
   // (un requestAnimationFrame podía ejecutarse antes de que React montara el resultado).
   const [focusRequest, setFocusRequest] = useState(null);
@@ -146,7 +230,12 @@ export function LeadForm() {
     (focusRequest.target === 'result' ? resultRef : summaryRef).current?.focus();
   }, [focusRequest]);
 
-  const liveErrors = useMemo(() => fieldErrors(values), [values]);
+  const [phoneLibReady, setPhoneLibReady] = useState(false);
+  const preparePhone = () => {
+    if (!hasPhoneLibrary()) loadPhoneLibrary().then(() => setPhoneLibReady(true));
+  };
+  // phoneLibReady obliga a revalidar cuando llegan las reglas de otros países.
+  const liveErrors = useMemo(() => fieldErrors(values), [values, phoneLibReady]); // eslint-disable-line react-hooks/exhaustive-deps
   const submitting = status.state === 'submitting';
 
   const errorFor = (field) => {
@@ -161,7 +250,8 @@ export function LeadForm() {
   const messageFor = (field) => {
     const code = errorFor(field);
     if (!code) return null;
-    if (field === 'interest' && code === 'required') return INTEREST_REQUIRED[interestBranch(values.savings)] || MESSAGES.interest.invalid;
+    if (field === 'interest' && code === 'required') return INTEREST_REQUIRED[interestBranch(values.interestType)] || MESSAGES.interest.invalid;
+    if (field === 'phone' && code === 'invalid' && values.phoneCountry === 'MX') return 'Escribe un número válido de 10 dígitos.';
     return MESSAGES[field][code] || MESSAGES[field].invalid || MESSAGES[field].required;
   };
 
@@ -169,21 +259,38 @@ export function LeadForm() {
     if (submitting) return;
     setValues((prev) => {
       const next = { ...prev, [field]: value };
-      // Al cambiar entre la rama de seguros y la de ahorro se limpia el interés elegido, para no
-      // enviar una selección oculta o contradictoria. Entre "Sí" y "No" se conserva.
-      if (field === 'savings' && interestBranch(prev.savings) !== interestBranch(value)) next.interest = '';
+      // Cambiar de rama (ahorro o seguro) limpia el interés detallado, para no enviar una
+      // selección oculta o contradictoria.
+      if (field === 'interestType' && interestBranch(prev.interestType) !== interestBranch(value)) next.interest = '';
+      // Cambiar de medio de contacto limpia el dato del medio anterior.
+      if (field === 'contactMethod' && prev.contactMethod !== value) {
+        next.email = '';
+        next.phone = '';
+      }
+      if (field === 'phone') {
+        const split = splitInternational(value, prev.phoneCountry);
+        if (split) Object.assign(next, split);
+      }
       return next;
     });
-    // Cambiar la respuesta de ahorro también descarta un error del servidor sobre el interés.
-    const stale = field === 'savings' ? [field, 'interest'] : [field];
+    // Un cambio también descarta los errores del servidor que dependían del valor anterior.
+    const stale =
+      field === 'interestType'
+        ? [field, 'interest']
+        : field === 'contactMethod'
+          ? [field, 'email', 'phone', 'phoneCountry']
+          : field === 'phoneCountry'
+            ? [field, 'phone']
+            : [field];
     if (stale.some((key) => serverErrors[key])) {
       setServerErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => !stale.includes(key))));
     }
     if (status.state === 'error') setStatus({ state: 'idle' });
   };
 
-  const branch = interestBranch(values.savings);
-  const interestOptions = interestOptionsFor(values.savings);
+  const branch = interestBranch(values.interestType);
+  const interestOptions = interestOptionsFor(values.interestType);
+  const method = values.contactMethod;
   const blur = (field) => setTouched((prev) => ({ ...prev, [field]: true }));
 
   const summaryFields = attempted ? FIELDS.filter((field) => errorFor(field)) : [];
@@ -192,6 +299,10 @@ export function LeadForm() {
     event.preventDefault();
     if (submitting) return;
     setAttempted(true);
+    if (values.contactMethod === 'phone' && !hasPhoneLibrary()) {
+      await loadPhoneLibrary();
+      setPhoneLibReady(true);
+    }
 
     const errors = fieldErrors(values);
     if (Object.keys(errors).length > 0) {
@@ -207,12 +318,16 @@ export function LeadForm() {
     }
 
     track('lead_form_attempt');
-    const payload = { ...values };
+    const payload = buildPayload(values);
     const fingerprint = JSON.stringify([
       normalizeName(values.name),
       values.age.trim(),
+      values.contactMethod,
+      values.email.trim().toLowerCase(),
+      values.contactMethod === 'phone' ? values.phoneCountry : '',
       values.phone.replace(/\D/g, ''),
-      values.savings,
+      values.income,
+      values.interestType,
       values.interest,
       values.consent,
     ]);
@@ -242,7 +357,7 @@ export function LeadForm() {
       const pending = data.notification !== 'accepted';
       // Conversión solo con recepción real del servidor.
       track('lead_submitted', { notification: pending ? 'pending' : 'accepted' });
-      setStatus({ state: pending ? 'pending' : 'success', id: data.id, demo: data.demo === true });
+      setStatus({ state: pending ? 'pending' : 'success', id: data.id, demo: data.demo === true, method: values.contactMethod });
       setFocusRequest({ target: 'result' });
       return;
     }
@@ -322,7 +437,11 @@ export function LeadForm() {
                   <h3 id="lead-result-title" className="lead-result__title">
                     Tu solicitud fue recibida.
                   </h3>
-                  <p className="lead-result__text">Luis podrá contactarte al teléfono que compartiste.</p>
+                  <p className="lead-result__text">
+                    {status.method === 'email'
+                      ? 'Luis podrá responderte al correo que compartiste.'
+                      : 'Luis podrá contactarte al teléfono que compartiste.'}
+                  </p>
                 </>
               ) : (
                 <>
@@ -363,6 +482,7 @@ export function LeadForm() {
               aria-busy={submitting}
               aria-describedby="lead-form-help"
               data-tuck-header=""
+              onFocus={preparePhone}
             >
               <p id="lead-form-help" className="lead-form__help">
                 Todos los campos son obligatorios.
@@ -423,107 +543,242 @@ export function LeadForm() {
                 ) : null}
               </div>
 
-              <div className="lead-form__row">
-                <div className={`field field--age${errorFor('age') ? ' has-error' : ''}`}>
-                  <label className="field__label" htmlFor="lead-age">
-                    {copy.ageLabel}
-                  </label>
-                  <input
-                    id="lead-age"
-                    className="field__input"
-                    name="age"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    autoComplete="off"
-                    enterKeyHint="next"
-                    maxLength={2}
-                    required
-                    value={values.age}
-                    readOnly={submitting}
-                    aria-invalid={errorFor('age') ? 'true' : undefined}
-                    aria-describedby={describedBy('age', 'lead-age-help')}
-                    onChange={(event) => update('age', event.target.value.replace(/[^\d]/g, ''))}
-                    onBlur={() => blur('age')}
-                  />
-                  <p id="lead-age-help" className="field__help">
-                    {copy.ageHelp}
+              <div className={`field field--age${errorFor('age') ? ' has-error' : ''}`}>
+                <label className="field__label" htmlFor="lead-age">
+                  {copy.ageLabel}
+                </label>
+                <input
+                  id="lead-age"
+                  className="field__input"
+                  name="age"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="off"
+                  enterKeyHint="next"
+                  maxLength={2}
+                  required
+                  value={values.age}
+                  readOnly={submitting}
+                  aria-invalid={errorFor('age') ? 'true' : undefined}
+                  aria-describedby={describedBy('age', 'lead-age-help')}
+                  onChange={(event) => update('age', event.target.value.replace(/[^\d]/g, ''))}
+                  onBlur={() => blur('age')}
+                />
+                <p id="lead-age-help" className="field__help">
+                  {copy.ageHelp}
+                </p>
+                {messageFor('age') ? (
+                  <p id="lead-age-error" className="field__error">
+                    <Icon name="alert" />
+                    {messageFor('age')}
                   </p>
-                  {messageFor('age') ? (
-                    <p id="lead-age-error" className="field__error">
-                      <Icon name="alert" />
-                      {messageFor('age')}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div className={`field field--phone${errorFor('phone') ? ' has-error' : ''}`}>
-                  <label className="field__label" htmlFor="lead-phone">
-                    {copy.phoneLabel}
-                  </label>
-                  <input
-                    id="lead-phone"
-                    className="field__input"
-                    name="phone"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    enterKeyHint="next"
-                    maxLength={LEAD_LIMITS.phoneRawMax}
-                    required
-                    value={values.phone}
-                    readOnly={submitting}
-                    aria-invalid={errorFor('phone') ? 'true' : undefined}
-                    aria-describedby={describedBy('phone', 'lead-phone-help')}
-                    onChange={(event) => update('phone', event.target.value)}
-                    onBlur={() => blur('phone')}
-                  />
-                  <p id="lead-phone-help" className="field__help">
-                    {copy.phoneHelp}
-                  </p>
-                  {messageFor('phone') ? (
-                    <p id="lead-phone-error" className="field__error">
-                      <Icon name="alert" />
-                      {messageFor('phone')}
-                    </p>
-                  ) : null}
-                </div>
+                ) : null}
               </div>
 
               <fieldset
-                className={`field choice${errorFor('savings') ? ' has-error' : ''}`}
-                aria-describedby={describedBy('savings', 'lead-savings-help')}
+                className={`field choice${errorFor('contactMethod') ? ' has-error' : ''}`}
+                aria-describedby={describedBy('contactMethod')}
               >
-                <legend className="field__label">{copy.savingsLegend}</legend>
-                <p id="lead-savings-help" className="field__help">
-                  {copy.savingsHelp}
-                </p>
-                <div className="choice__options">
-                  {SAVINGS_OPTIONS.map((option, index) => (
+                <legend className="field__label">{copy.contactLegend}</legend>
+                <div className="choice__options choice__options--pair">
+                  {CONTACT_METHODS.map((option, index) => (
                     <label key={option.value} className="choice__option">
                       <input
-                        id={index === 0 ? 'lead-savings' : undefined}
+                        id={index === 0 ? 'lead-contactMethod' : undefined}
                         type="radio"
-                        name="savings"
+                        name="contactMethod"
                         value={option.value}
-                        checked={values.savings === option.value}
-                        onChange={() => update('savings', option.value)}
-                        onBlur={() => blur('savings')}
+                        checked={values.contactMethod === option.value}
+                        onChange={() => update('contactMethod', option.value)}
+                        onBlur={() => blur('contactMethod')}
                       />
                       <span className="choice__mark" aria-hidden="true" />
                       <span className="choice__text">{option.label}</span>
                     </label>
                   ))}
                 </div>
-                {messageFor('savings') ? (
-                  <p id="lead-savings-error" className="field__error">
+                {messageFor('contactMethod') ? (
+                  <p id="lead-contactMethod-error" className="field__error">
                     <Icon name="alert" />
-                    {messageFor('savings')}
+                    {messageFor('contactMethod')}
                   </p>
                 ) : null}
               </fieldset>
 
-              {/* Pregunta de interés: aparece según la respuesta anterior, sin mover el foco. */}
+              {/* Dato de contacto: solo el del medio elegido, sin mover el foco. */}
+              <div className={`interest${method ? ' is-open' : ''}`}>
+                <div className="interest__inner">
+                  {method === 'email' ? (
+                    <div key="email" className={`field interest__fieldset${errorFor('email') ? ' has-error' : ''}`}>
+                      <label className="field__label" htmlFor="lead-email">
+                        {copy.emailLabel}
+                      </label>
+                      <input
+                        id="lead-email"
+                        className="field__input"
+                        name="email"
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        autoCapitalize="off"
+                        spellCheck={false}
+                        enterKeyHint="next"
+                        maxLength={LEAD_LIMITS.emailMax}
+                        required
+                        value={values.email}
+                        readOnly={submitting}
+                        aria-invalid={errorFor('email') ? 'true' : undefined}
+                        aria-describedby={describedBy('email', 'lead-email-help')}
+                        onChange={(event) => update('email', event.target.value)}
+                        onBlur={() => blur('email')}
+                      />
+                      <p id="lead-email-help" className="field__help">
+                        {copy.emailHelp}
+                      </p>
+                      {messageFor('email') ? (
+                  <p id="lead-email-error" className="field__error">
+                    <Icon name="alert" />
+                    {messageFor('email')}
+                  </p>
+                ) : null}
+                    </div>
+                  ) : method === 'phone' ? (
+                    <div
+                      key="phone"
+                      className={`field interest__fieldset${errorFor('phone') || errorFor('phoneCountry') ? ' has-error' : ''}`}
+                    >
+                      <div className="phone-group">
+                        <div className="phone-group__country">
+                          <label className="field__label" htmlFor="lead-phoneCountry">
+                            {copy.phoneCountryLabel}
+                          </label>
+                          <select
+                            id="lead-phoneCountry"
+                            className="field__input field__select"
+                            name="phoneCountry"
+                            autoComplete="tel-country-code"
+                            value={values.phoneCountry}
+                            disabled={submitting}
+                            aria-invalid={errorFor('phoneCountry') ? 'true' : undefined}
+                            aria-describedby={describedBy('phoneCountry')}
+                            onChange={(event) => update('phoneCountry', event.target.value)}
+                            onBlur={() => blur('phoneCountry')}
+                          >
+                            {COUNTRIES.map((country) => (
+                              <option key={country.code} value={country.code}>
+                                +{country.dial} {country.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="phone-group__number">
+                          <label className="field__label" htmlFor="lead-phone">
+                            {copy.phoneLabel}
+                          </label>
+                          <input
+                            id="lead-phone"
+                            className="field__input"
+                            name="phone"
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel-national"
+                            enterKeyHint="next"
+                            maxLength={LEAD_LIMITS.phoneRawMax}
+                            required
+                            value={values.phone}
+                            readOnly={submitting}
+                            aria-invalid={errorFor('phone') ? 'true' : undefined}
+                            aria-describedby={describedBy('phone', 'lead-phone-help')}
+                            onChange={(event) => update('phone', event.target.value)}
+                            onBlur={() => blur('phone')}
+                          />
+                        </div>
+                      </div>
+                      <p id="lead-phone-help" className="field__help">
+                        {values.phoneCountry === 'MX' ? copy.phoneHelpMx : copy.phoneHelpIntl}
+                      </p>
+                      {messageFor('phoneCountry') ? (
+                  <p id="lead-phoneCountry-error" className="field__error">
+                    <Icon name="alert" />
+                    {messageFor('phoneCountry')}
+                  </p>
+                ) : null}
+                      {messageFor('phone') ? (
+                  <p id="lead-phone-error" className="field__error">
+                    <Icon name="alert" />
+                    {messageFor('phone')}
+                  </p>
+                ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              <fieldset
+                className={`field choice${errorFor('income') ? ' has-error' : ''}`}
+                aria-describedby={describedBy('income', 'lead-income-help')}
+              >
+                <legend className="field__label">{copy.incomeLegend}</legend>
+                <p id="lead-income-help" className="field__help">
+                  {copy.incomeHelp}
+                </p>
+                <div className="choice__options choice__options--stack">
+                  {INCOME_OPTIONS.map((option, index) => (
+                    <label key={option.value} className="choice__option">
+                      <input
+                        id={index === 0 ? 'lead-income' : undefined}
+                        type="radio"
+                        name="income"
+                        value={option.value}
+                        checked={values.income === option.value}
+                        onChange={() => update('income', option.value)}
+                        onBlur={() => blur('income')}
+                      />
+                      <span className="choice__mark" aria-hidden="true" />
+                      <span className="choice__text">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+                {messageFor('income') ? (
+                  <p id="lead-income-error" className="field__error">
+                    <Icon name="alert" />
+                    {messageFor('income')}
+                  </p>
+                ) : null}
+              </fieldset>
+
+              <fieldset
+                className={`field choice${errorFor('interestType') ? ' has-error' : ''}`}
+                aria-describedby={describedBy('interestType')}
+              >
+                <legend className="field__label">{copy.interestTypeLegend}</legend>
+                <div className="choice__options choice__options--pair">
+                  {INTEREST_TYPES.map((option, index) => (
+                    <label key={option.value} className="choice__option">
+                      <input
+                        id={index === 0 ? 'lead-interestType' : undefined}
+                        type="radio"
+                        name="interestType"
+                        value={option.value}
+                        checked={values.interestType === option.value}
+                        onChange={() => update('interestType', option.value)}
+                        onBlur={() => blur('interestType')}
+                      />
+                      <span className="choice__mark" aria-hidden="true" />
+                      <span className="choice__text">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+                {messageFor('interestType') ? (
+                  <p id="lead-interestType-error" className="field__error">
+                    <Icon name="alert" />
+                    {messageFor('interestType')}
+                  </p>
+                ) : null}
+              </fieldset>
+
+              {/* Pregunta de detalle: aparece según el tipo de interés, sin mover el foco. */}
               <div className={`interest${branch ? ' is-open' : ''}`}>
                 <div className="interest__inner">
                   {branch ? (
@@ -535,33 +790,38 @@ export function LeadForm() {
                       <legend className="field__label">{INTEREST_QUESTIONS[branch]}</legend>
                       <div className="choice__options choice__options--interest">
                         {interestOptions.map((option, index) => (
-                          <label key={option.value} className="choice__option">
-                            <input
-                              id={index === 0 ? 'lead-interest' : undefined}
-                              type="radio"
-                              name="interest"
-                              value={option.value}
-                              checked={values.interest === option.value}
-                              onChange={() => update('interest', option.value)}
-                              onBlur={() => blur('interest')}
-                            />
-                            <span className="choice__mark" aria-hidden="true" />
-                            <span className="choice__text">{option.label}</span>
-                          </label>
-                        ))}
+                    <label key={option.value} className="choice__option">
+                      <input
+                        id={index === 0 ? 'lead-interest' : undefined}
+                        type="radio"
+                        name="interest"
+                        value={option.value}
+                        checked={values.interest === option.value}
+                        onChange={() => update('interest', option.value)}
+                        onBlur={() => blur('interest')}
+                      />
+                      <span className="choice__mark" aria-hidden="true" />
+                      <span className="choice__text">{option.label}</span>
+                    </label>
+                  ))}
                       </div>
                       {messageFor('interest') ? (
-                        <p id="lead-interest-error" className="field__error">
-                          <Icon name="alert" />
-                          {messageFor('interest')}
-                        </p>
-                      ) : null}
+                  <p id="lead-interest-error" className="field__error">
+                    <Icon name="alert" />
+                    {messageFor('interest')}
+                  </p>
+                ) : null}
                     </fieldset>
                   ) : null}
                 </div>
               </div>
               <p className="visually-hidden" aria-live="polite">
-                {branch ? `Nueva pregunta: ${INTEREST_QUESTIONS[branch]}` : ''}
+                {[
+                  method === 'email' ? `Nuevo campo: ${copy.emailLabel}` : method === 'phone' ? `Nuevos campos: ${copy.phoneCountryLabel} y ${copy.phoneLabel}` : '',
+                  branch ? `Nueva pregunta: ${INTEREST_QUESTIONS[branch]}` : '',
+                ]
+                  .filter(Boolean)
+                  .join('. ')}
               </p>
 
               <div className={`field consent${errorFor('consent') ? ' has-error' : ''}`}>
@@ -579,7 +839,7 @@ export function LeadForm() {
                   <span className="consent__box" aria-hidden="true">
                     <Icon name="check" strokeWidth={2.6} />
                   </span>
-                  <span>{copy.consentLabel}</span>
+                  <span>{copy.consentLabels[method] || copy.consentLabels.none}</span>
                 </label>
                 {messageFor('consent') ? (
                   <p id="lead-consent-error" className="field__error">
@@ -600,7 +860,7 @@ export function LeadForm() {
                 <Icon name="lock" />
                 <p id="lead-privacy-short">
                   {copy.privacyShort}{' '}
-                  <button type="button" className="text-link lead-form__privacy-link" onClick={() => setPrivacyOpen(true)}>
+                  <button ref={privacyButtonRef} type="button" className="text-link lead-form__privacy-link" onClick={() => setPrivacyOpen(true)}>
                     {copy.privacyLink}
                   </button>
                 </p>
@@ -668,7 +928,7 @@ export function LeadForm() {
           )}
         </div>
       </div>
-      <PrivacyDialog open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
+      <PrivacyDialog open={privacyOpen} onClose={() => setPrivacyOpen(false)} returnFocusRef={privacyButtonRef} />
     </section>
   );
 }

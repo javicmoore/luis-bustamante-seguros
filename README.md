@@ -10,9 +10,9 @@ para todo México. React 19 + Vite 8, HTML prerenderizado y funciones de Vercel 
 
 ## Qué incluye
 
-Header flotante y diez bloques, en este orden: 1) Hero, 2) carrusel de marcas, 3) simulador de ahorro y retiro,
-4) formulario de asesoría, 5) beneficios y servicios, 6) Sobre Luis, 7) video, 8) testimonios, 9) FAQ,
-10) footer; además del aviso de privacidad (`/aviso-de-privacidad`) y una página 404.
+Header flotante y diez bloques, en este orden (21 oct 2026): 1) Hero, 2) carrusel de marcas, 3) simulador de ahorro y retiro,
+4) formulario de asesoría, 5) Sobre Luis, 6) video ("Conoce a Luis"), 7) testimonios, 8) beneficios (con las
+tarjetas de servicios), 9) FAQ, 10) footer; además del aviso de privacidad (`/aviso-de-privacidad`) y una página 404.
 
 En producción, marcas, video y testimonios **solo aparecen con contenido real y autorizado**. En
 `npm run dev` se ven sus espacios con el pendiente identificado (fixtures "DEMO" en el carrusel).

@@ -1,27 +1,51 @@
 // Esquema de la solicitud de asesoría, compartido por el formulario y el servidor.
 // El servidor vuelve a validar todo: el navegador nunca es fuente de confianza.
+import { COUNTRY_BY_CODE } from './countries.js';
+
+// Reglas telefónicas de otros países (libphonenumber-js). Se registran desde shared/phone-lib.js:
+// el servidor y las pruebas lo cargan al inicio; el navegador, solo cuando se usa el formulario
+// (así sus metadatos no pesan en la carga inicial). México se valida sin la librería.
+let phoneLib = null;
+export function setPhoneLibrary(lib) {
+  phoneLib = lib;
+}
+export const hasPhoneLibrary = () => phoneLib !== null;
 
 export const LEAD_LIMITS = Object.freeze({
   nameMin: 2,
   nameMax: 80,
   ageMin: 18,
   ageMax: 99,
-  phoneRawMax: 24,
+  phoneRawMax: 32,
+  emailMax: 254,
 });
 
-export const SAVINGS_OPTIONS = Object.freeze([
-  { value: 'si', label: 'Sí' },
-  { value: 'no', label: 'No' },
-  { value: 'no_aplica', label: 'Busco un seguro / No aplica' },
+// Medio de contacto preferido. La solicitud siempre llega al WhatsApp de Luis; esto indica cómo
+// prefiere el visitante que Luis le responda. Solo se pide el dato del medio elegido.
+export const CONTACT_METHODS = Object.freeze([
+  { value: 'email', label: 'Correo electrónico', notice: 'Correo electrónico' },
+  { value: 'phone', label: 'Teléfono', notice: 'Teléfono (llamada o WhatsApp)' },
+]);
+export const CONTACT_METHOD_BY_VALUE = Object.freeze(Object.fromEntries(CONTACT_METHODS.map((o) => [o.value, o])));
+
+export const DEFAULT_PHONE_COUNTRY = 'MX';
+
+// Rango de ingresos mensuales (MXN), con límites inequívocos. Solo orienta la conversación:
+// nunca se usa para aprobar o rechazar prospectos ni para afirmar que califican a un producto.
+export const INCOME_OPTIONS = Object.freeze([
+  { value: '20_30', label: 'De $20,000 a menos de $30,000', notice: 'De $20,000 a menos de $30,000 MXN' },
+  { value: '30_50', label: 'De $30,000 a menos de $50,000', notice: 'De $30,000 a menos de $50,000 MXN' },
+  { value: '50_mas', label: '$50,000 o más', notice: '$50,000 MXN o más' },
+]);
+export const INCOME_BY_VALUE = Object.freeze(Object.fromEntries(INCOME_OPTIONS.map((o) => [o.value, o])));
+
+// "¿Qué te interesa?": clasifica al prospecto y decide la pregunta de detalle.
+export const INTEREST_TYPES = Object.freeze([
+  { value: 'ahorro', label: 'Ahorro o retiro' },
+  { value: 'seguro', label: 'Un seguro' },
 ]);
 
-export const SAVINGS_LABELS = Object.freeze(
-  Object.fromEntries(SAVINGS_OPTIONS.map((o) => [o.value, o.label])),
-);
-
-// Interés del prospecto: una sola elección, cuyas opciones dependen de la respuesta anterior.
-//  - "Busco un seguro / No aplica" → rama de seguros.
-//  - "Sí" o "No" → rama de ahorro y retiro (responder "No" nunca bloquea la solicitud).
+// Interés detallado: una sola elección, cuyas opciones dependen del tipo de interés.
 // `headline` completa "Nuevo prospecto …" en el aviso a Luis; `label` es el texto del formulario y
 // `notice` el que se muestra en el aviso.
 export const INSURANCE_INTERESTS = Object.freeze([
@@ -43,15 +67,13 @@ export const INTEREST_BY_VALUE = Object.freeze(
   Object.fromEntries([...INSURANCE_INTERESTS, ...ADVICE_INTERESTS].map((o) => [o.value, o])),
 );
 
-/** Rama del interés según la respuesta de ahorro: 'seguro', 'ahorro' o null. */
-export function interestBranch(savings) {
-  if (savings === 'no_aplica') return 'seguro';
-  if (savings === 'si' || savings === 'no') return 'ahorro';
-  return null;
+/** Rama del interés detallado según el tipo elegido: 'seguro', 'ahorro' o null. */
+export function interestBranch(interestType) {
+  return interestType === 'seguro' || interestType === 'ahorro' ? interestType : null;
 }
 
-export function interestOptionsFor(savings) {
-  const branch = interestBranch(savings);
+export function interestOptionsFor(interestType) {
+  const branch = interestBranch(interestType);
   if (branch === 'seguro') return INSURANCE_INTERESTS;
   if (branch === 'ahorro') return ADVICE_INTERESTS;
   return [];
@@ -70,50 +92,100 @@ export function leadHeadline(interest) {
 
 // Campos aceptados. Cualquier otro (p. ej. un destinatario) invalida la solicitud.
 // `website` es un campo trampa (honeypot) que una persona no ve ni llena.
-export const ALLOWED_FIELDS = Object.freeze(['name', 'age', 'phone', 'savings', 'interest', 'consent', 'website']);
+export const ALLOWED_FIELDS = Object.freeze([
+  'name',
+  'age',
+  'contactMethod',
+  'email',
+  'phoneCountry',
+  'phone',
+  'income',
+  'interestType',
+  'interest',
+  'consent',
+  'website',
+]);
 
-// Versión del texto de consentimiento que el visitante aceptó.
-export const CONSENT_VERSION = '2026-10-borrador';
+// Versión del texto de consentimiento que el visitante aceptó (cambia con el medio elegido).
+export const CONSENT_VERSION = '2026-10-21-borrador';
+
+const has = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+const blank = (value) => value === undefined || value === null || value === '';
 
 // Controles, formato invisible (zero-width, bidi) y separadores de línea/párrafo Unicode.
 const CONTROL_CHARS = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu;
-const NAME_PATTERN = /^[\p{L}\p{M}][\p{L}\p{M}'’.\- ]*$/u;
+const HAS_CONTROL = new RegExp(CONTROL_CHARS.source, 'u');
+const NAME_PATTERN =/^[\p{L}\p{M}][\p{L}\p{M}'’.\- ]*$/u;
 
 export function normalizeName(raw) {
   if (typeof raw !== 'string') return '';
   return raw.normalize('NFC').replace(CONTROL_CHARS, ' ').replace(/\s+/g, ' ').trim();
 }
 
+// Correo: una parte local y un dominio con al menos un punto, sin espacios ni caracteres de control.
+const EMAIL_PATTERN = /^[^\s@<>()[\]\\,;:"]+@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
+
+/** @returns {string | null} correo normalizado (dominio en minúsculas) o null si no es válido. */
+export function normalizeEmail(raw) {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > LEAD_LIMITS.emailMax || HAS_CONTROL.test(trimmed)) return null;
+  if (!EMAIL_PATTERN.test(trimmed)) return null;
+  const at = trimmed.lastIndexOf('@');
+  const local = trimmed.slice(0, at);
+  if (local.length > 64 || local.startsWith('.') || local.endsWith('.') || local.includes('..')) return null;
+  return `${local}@${trimmed.slice(at + 1).toLowerCase()}`;
+}
+
+const formatMx = (national) => `+52 ${national.slice(0, 3)} ${national.slice(3, 6)} ${national.slice(6)}`;
+
+function validMxNational(national) {
+  return /^[2-9]\d{9}$/.test(national) && !/^(\d)\1{9}$/.test(national);
+}
+
 /**
- * Normaliza un teléfono de contacto.
- * Acepta 10 dígitos nacionales (México), +52 / 52 + 10 dígitos, el antiguo prefijo móvil
- * 521 + 10 dígitos y números de EE. UU./Canadá (+1 + 10 dígitos), frecuentes en la frontera.
- * @returns {{ e164: string, display: string } | null}
+ * Normaliza un teléfono de contacto a E.164.
+ * - México: 10 dígitos nacionales (también acepta 52/521 + 10 dígitos, con o sin "+").
+ * - Otros países: según las reglas del país elegido (libphonenumber-js).
+ * - Un número completo con "+" o "00" se interpreta por su prefijo, cuando es inequívoco.
+ * @param {string} raw
+ * @param {string} [country] código ISO del país elegido (por defecto México)
+ * @returns {{ e164: string, display: string, country: string } | null}
  */
-export function normalizePhone(raw) {
+export function normalizePhone(raw, country = DEFAULT_PHONE_COUNTRY) {
   if (typeof raw !== 'string') return null;
   const trimmed = raw.trim();
   if (!trimmed || trimmed.length > LEAD_LIMITS.phoneRawMax) return null;
   if (!/^[+\d\s().-]+$/.test(trimmed)) return null;
-  const hasPlus = trimmed.startsWith('+');
+  if (!has(COUNTRY_BY_CODE, country)) return null;
+  const international = trimmed.startsWith('+') || trimmed.startsWith('00');
   const digits = trimmed.replace(/\D/g, '');
 
-  let national = null;
-  let country = '52';
-  if (!hasPlus && digits.length === 10) national = digits;
-  else if (digits.length === 12 && digits.startsWith('52')) national = digits.slice(2);
-  else if (digits.length === 13 && digits.startsWith('521')) national = digits.slice(3);
-  else if (hasPlus && digits.length === 11 && digits.startsWith('1')) {
-    country = '1';
-    national = digits.slice(1);
+  if (international) {
+    const full = trimmed.startsWith('00') ? digits.slice(2) : digits;
+    if (full.startsWith('52')) {
+      // México con prefijo (+52 o el antiguo +521 de móviles): 10 dígitos nacionales.
+      const rest = full.slice(2);
+      const national = rest.length === 11 && rest.startsWith('1') ? rest.slice(1) : rest;
+      return validMxNational(national) ? { e164: `+52${national}`, display: formatMx(national), country: 'MX' } : null;
+    }
+    if (!phoneLib) return null;
+    const parsed = phoneLib.parsePhoneNumberFromString(`+${full}`);
+    if (!parsed || !parsed.isValid()) return null;
+    return { e164: parsed.number, display: parsed.formatInternational(), country: parsed.country || country };
   }
-  if (!national || !/^[2-9]\d{9}$/.test(national) || /^(\d)\1{9}$/.test(national)) return null;
 
-  const display =
-    country === '52'
-      ? `+52 ${national.slice(0, 3)} ${national.slice(3, 6)} ${national.slice(6)}`
-      : `+1 ${national.slice(0, 3)} ${national.slice(3, 6)} ${national.slice(6)}`;
-  return { e164: `+${country}${national}`, display };
+  if (country === 'MX') {
+    let national = null;
+    if (digits.length === 10) national = digits;
+    else if (digits.length === 12 && digits.startsWith('52')) national = digits.slice(2);
+    else if (digits.length === 13 && digits.startsWith('521')) national = digits.slice(3);
+    return national && validMxNational(national) ? { e164: `+52${national}`, display: formatMx(national), country: 'MX' } : null;
+  }
+
+  if (!phoneLib || !phoneLib.isValidPhoneNumber(trimmed, country)) return null;
+  const parsed = phoneLib.parsePhoneNumberFromString(trimmed, country);
+  return parsed ? { e164: parsed.number, display: parsed.formatInternational(), country: parsed.country || country } : null;
 }
 
 function parseAge(raw) {
@@ -153,33 +225,50 @@ export function validateLead(input, { strict = true } = {}) {
   else if (!NAME_PATTERN.test(name)) errors.name = 'invalid';
 
   let age = NaN;
-  if (input.age === undefined || input.age === null || input.age === '') errors.age = 'required';
+  if (blank(input.age)) errors.age = 'required';
   else {
     age = parseAge(input.age);
     if (!Number.isInteger(age)) errors.age = 'invalid';
     else if (age < LEAD_LIMITS.ageMin || age > LEAD_LIMITS.ageMax) errors.age = 'out_of_range';
   }
 
+  // Medio de contacto: solo se exige (y se acepta) el dato del medio elegido.
+  const method = input.contactMethod;
+  let email = null;
   let phone = null;
-  if (typeof input.phone !== 'string' || !input.phone.trim()) errors.phone = 'required';
-  else {
-    phone = normalizePhone(input.phone);
-    if (!phone) errors.phone = 'invalid';
+  if (blank(method)) errors.contactMethod = 'required';
+  else if (typeof method !== 'string' || !has(CONTACT_METHOD_BY_VALUE, method)) errors.contactMethod = 'invalid';
+  else if (method === 'email') {
+    if (blank(input.email)) errors.email = 'required';
+    else {
+      email = normalizeEmail(input.email);
+      if (!email) errors.email = 'invalid';
+    }
+    if (!blank(input.phone)) errors.phone = 'not_allowed';
+  } else {
+    const country = blank(input.phoneCountry) ? DEFAULT_PHONE_COUNTRY : input.phoneCountry;
+    if (typeof country !== 'string' || !has(COUNTRY_BY_CODE, country)) errors.phoneCountry = 'invalid';
+    else if (typeof input.phone !== 'string' || !input.phone.trim()) errors.phone = 'required';
+    else {
+      phone = normalizePhone(input.phone, country);
+      if (!phone) errors.phone = 'invalid';
+    }
+    if (!blank(input.email)) errors.email = 'not_allowed';
   }
 
-  if (input.savings === undefined || input.savings === null || input.savings === '') {
-    errors.savings = 'required';
-  } else if (typeof input.savings !== 'string' || !(input.savings in SAVINGS_LABELS)) {
-    errors.savings = 'invalid';
-  }
+  if (blank(input.income)) errors.income = 'required';
+  else if (typeof input.income !== 'string' || !has(INCOME_BY_VALUE, input.income)) errors.income = 'invalid';
 
-  // Interés: obligatorio, de las opciones definidas y compatible con la respuesta de ahorro.
-  const options = errors.savings ? [] : interestOptionsFor(input.savings);
-  if (input.interest === undefined || input.interest === null || input.interest === '') {
-    if (!errors.savings) errors.interest = 'required';
-  } else if (typeof input.interest !== 'string' || !Object.prototype.hasOwnProperty.call(INTEREST_BY_VALUE, input.interest)) {
+  // Tipo de interés y detalle compatible con ese tipo.
+  const type = input.interestType;
+  if (blank(type)) errors.interestType = 'required';
+  else if (typeof type !== 'string' || !interestBranch(type)) errors.interestType = 'invalid';
+  const options = errors.interestType ? [] : interestOptionsFor(type);
+  if (blank(input.interest)) {
+    if (!errors.interestType) errors.interest = 'required';
+  } else if (typeof input.interest !== 'string' || !has(INTEREST_BY_VALUE, input.interest)) {
     errors.interest = 'invalid';
-  } else if (!errors.savings && !options.some((o) => o.value === input.interest)) {
+  } else if (!errors.interestType && !options.some((o) => o.value === input.interest)) {
     errors.interest = 'incompatible';
   }
 
@@ -192,9 +281,13 @@ export function validateLead(input, { strict = true } = {}) {
     value: {
       name,
       age,
-      phoneE164: phone.e164,
-      phoneDisplay: phone.display,
-      savings: input.savings,
+      contactMethod: method,
+      email,
+      phoneE164: phone?.e164 ?? null,
+      phoneDisplay: phone?.display ?? null,
+      phoneCountry: phone?.country ?? null,
+      income: input.income,
+      interestType: type,
       interest: input.interest,
       consent: true,
     },

@@ -1,10 +1,13 @@
 .services {
-  background: var(--white);
+  background:
+    radial-gradient(60% 50% at 100% 0%, rgb(46 84 122 / 0.45), transparent 65%),
+    var(--navy-950);
 }
 
 .services__head {
   display: grid;
   gap: 1.25rem;
+  max-width: 44rem;
 }
 
 .services__head .eyebrow {
@@ -15,30 +18,38 @@
   max-width: 16em;
 }
 
-/* ---------- Beneficios: lista editorial con numerales ---------- */
+/* ---------- Beneficios: tarjetas con icono (azul profundo, acento cobre discreto) ---------- */
 .benefits {
   display: grid;
+  gap: 1rem;
   margin-top: var(--block-y);
-  border-top: 1px solid var(--slate-150);
 }
 
 .benefit {
   display: grid;
-  grid-template-columns: 3.4rem minmax(0, 1fr);
-  column-gap: 1.25rem;
-  row-gap: 0.4rem;
-  padding: 1.5rem 0;
-  border-bottom: 1px solid var(--slate-150);
+  align-content: start;
+  gap: 0.6rem;
+  padding: clamp(1.4rem, 1rem + 1.4vw, 2rem);
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-top: 2px solid rgb(200 128 64 / 0.75);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 0.05);
 }
 
-.benefit__index {
-  grid-row: span 2;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 500;
-  font-size: 2.5rem;
-  line-height: 1;
-  color: var(--gold-600);
+.benefit__icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: 0.35rem;
+  border-radius: 12px;
+  background: rgb(200 128 64 / 0.14);
+  color: var(--gold-300);
+}
+
+.benefit__icon .icon {
+  width: 1.4rem;
+  height: 1.4rem;
 }
 
 .benefit__title {
@@ -49,8 +60,16 @@
 }
 
 .benefit__text {
-  color: var(--slate-600);
+  color: rgb(255 255 255 / 0.76);
   line-height: 1.6;
+}
+
+.services__intro {
+  max-width: 40rem;
+  margin-top: var(--block-y);
+  font-size: var(--text-md);
+  line-height: 1.6;
+  color: rgb(255 255 255 / 0.8);
 }
 
 /* ---------- Servicios ---------- */
@@ -200,7 +219,7 @@
   gap: 1.25rem 2rem;
   margin-top: var(--block-y);
   padding-top: 2rem;
-  border-top: 1px solid var(--slate-150);
+  border-top: 1px solid rgb(255 255 255 / 0.14);
 }
 
 .services__cta p {
@@ -327,33 +346,9 @@
 }
 
 @media (min-width: 960px) {
-  .services__head {
-    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    align-items: end;
-    gap: 4rem;
-  }
-
   .benefits {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    border-top: 0;
-  }
-
-  .benefit {
-    grid-template-columns: 1fr;
-    align-content: start;
-    padding: 0.25rem 2rem 0;
-    border-bottom: 0;
-    border-left: 1px solid var(--slate-150);
-  }
-
-  .benefit:first-child {
-    padding-left: 0;
-    border-left: 0;
-  }
-
-  .benefit__index {
-    grid-row: auto;
-    margin-bottom: 0.75rem;
+    gap: 1.5rem;
   }
 }
 

@@ -33,9 +33,11 @@ export function PrivacyContent({ headingLevel = 2 }) {
 
       <H>Datos que se recaban</H>
       <p>
-        A través del formulario de asesoría: nombre, edad, teléfono de contacto y tu respuesta sobre si puedes destinar
-        parte de tus ingresos a un objetivo de ahorro o retiro. No se solicitan correo electrónico, ingresos exactos,
-        datos de salud ni otros datos sensibles por este medio.
+        A través del formulario de asesoría: nombre, edad, el medio por el que prefieres que te contacten y el dato
+        correspondiente (correo electrónico o teléfono con su país), el rango de tus ingresos mensuales y el tema que te
+        interesa. El rango de ingresos es un dato patrimonial que solo orienta la conversación: no se usa para aprobar
+        ni rechazar solicitudes. No se solicitan ingresos exactos, datos de salud ni otros datos sensibles por este
+        medio. <Pending>revisión legal del tratamiento de datos patrimoniales</Pending>
       </p>
       <p>
         Para prevenir el uso abusivo del formulario, el servidor procesa tu dirección IP de forma seudonimizada y
@@ -44,8 +46,8 @@ export function PrivacyContent({ headingLevel = 2 }) {
 
       <H>Finalidad</H>
       <p>
-        Tus datos se usan únicamente para contactarte por teléfono o WhatsApp y dar seguimiento a la solicitud de
-        asesoría que enviaste. No se usan para enviarte publicidad ni campañas y no se venden.
+        Tus datos se usan únicamente para contactarte por el medio que elegiste (correo electrónico, o llamada o
+        WhatsApp) y dar seguimiento a la solicitud de asesoría que enviaste. No se usan para enviarte publicidad ni campañas y no se venden.
       </p>
 
       <H>Cómo se procesa tu solicitud</H>
@@ -77,8 +79,9 @@ export function PrivacyContent({ headingLevel = 2 }) {
 
       <H>Consentimiento</H>
       <p>
-        Al marcar la casilla de autorización y enviar el formulario, aceptas que {site.name} te contacte por teléfono o
-        WhatsApp sobre tu solicitud, conforme a este aviso. La autorización se limita a esa solicitud.
+        Al marcar la casilla de autorización y enviar el formulario, aceptas de forma expresa que {site.name} te
+        contacte por el medio que elegiste (correo electrónico, o llamada o WhatsApp) sobre tu solicitud, conforme a
+        este aviso. La autorización se limita a esa solicitud.
       </p>
 
       <H>Cambios a este aviso</H>

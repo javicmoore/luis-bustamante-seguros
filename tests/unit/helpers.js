@@ -5,8 +5,11 @@ export const ORIGIN = 'http://localhost:5173';
 export const validLead = () => ({
   name: 'Ana López',
   age: '34',
+  contactMethod: 'phone',
+  phoneCountry: 'MX',
   phone: '686 000 1234',
-  savings: 'si',
+  income: '30_50',
+  interestType: 'ahorro',
   interest: 'ppr_retiro',
   consent: true,
   website: '',

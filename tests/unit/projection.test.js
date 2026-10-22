@@ -7,6 +7,7 @@ import {
   normalizeContribution,
   project,
   valuesAtYear,
+  waitingCost,
 } from '../../src/components/Simulator/projection.js';
 
 describe('simulador: convención de cálculo', () => {
@@ -86,6 +87,33 @@ describe('simulador: convención de cálculo', () => {
     expect(last.contributed).toBe(result.contributed);
     expect(last.scenario).toBe(result.scenario);
     expect(valuesAtYear({ contribution: 3000, rate: 5.5 }, 15).scenario).toBeCloseTo(result.scenario, 8);
+  });
+
+  it('costo de esperar: misma aportación, tasa y fecha final; quien espera aporta 5 años menos', () => {
+    const r = waitingCost({ contribution: 3000, years: 15, rate: 10 });
+    const i = monthlyRate(10);
+    expect(r.today).toBeCloseTo(futureValue(3000, 180, i), 6);
+    expect(r.later).toBeCloseTo(futureValue(3000, 120, i), 6);
+    expect(r.difference).toBeCloseTo(r.today - r.later, 6);
+    expect(r.today).toBeCloseTo(project({ contribution: 3000, years: 15, rate: 10 }).scenario, 6);
+  });
+
+  it('costo de esperar con 0 %: solo las aportaciones que no se hicieron', () => {
+    const r = waitingCost({ contribution: 3000, years: 20, rate: 0 });
+    expect(r).toEqual({ today: 3000 * 240, later: 3000 * 180, difference: 3000 * 60 });
+  });
+
+  it('costo de esperar respeta el mínimo de aportación y cambia con el plazo', () => {
+    expect(waitingCost({ contribution: 500, years: 10, rate: 0 }).difference).toBe(2000 * 60);
+    const a = waitingCost({ contribution: 3000, years: 10, rate: 10 }).difference;
+    const b = waitingCost({ contribution: 3000, years: 25, rate: 10 }).difference;
+    expect(b).toBeGreaterThan(a);
+  });
+
+  it('costo de esperar: con plazo de 5 años o menos no hay comparación', () => {
+    expect(waitingCost({ contribution: 3000, years: 5, rate: 10 })).toBeNull();
+    expect(waitingCost({ contribution: 3000, years: 1, rate: 10 })).toBeNull();
+    expect(waitingCost({ contribution: 3000, years: 6, rate: 10 }).later).toBeCloseTo(futureValue(3000, 12, monthlyRate(10)), 6);
   });
 
   it('niceMax redondea hacia arriba y nunca devuelve 0', () => {

@@ -71,6 +71,12 @@ export function Footer({ variant = 'home' }) {
                 </a>
               </li>
               <li>
+                <a href={site.email.href}>
+                  <Icon name="mail" />
+                  Correo {site.email.address}
+                </a>
+              </li>
+              <li>
                 <a href={site.instagram.href} target="_blank" rel="noopener noreferrer">
                   <Icon name="instagram" />
                   Instagram {site.instagram.handle}

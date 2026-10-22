@@ -29,6 +29,7 @@
     "video:poster": "node scripts/prepare-video-poster.mjs"
   },
   "dependencies": {
+    "libphonenumber-js": "^1.13.15",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },

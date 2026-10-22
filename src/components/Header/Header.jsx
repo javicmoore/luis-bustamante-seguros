@@ -67,7 +67,7 @@ export function Header({ variant = 'home' }) {
         toggleRef.current?.focus();
       }
     };
-    const wide = window.matchMedia('(min-width: 1024px)');
+    const wide = window.matchMedia('(min-width: 1360px)');
     const onWide = () => wide.matches && setOpen(false);
     document.addEventListener('keydown', onKey);
     wide.addEventListener('change', onWide);
@@ -147,6 +147,16 @@ export function Header({ variant = 'home' }) {
           </ul>
         </nav>
 
+        <a className="site-header__contact site-header__call" href={site.phone.href}>
+          <Icon name="phone" />
+          <span className="site-header__contact-text">Llamar</span>
+          <span className="visually-hidden"> al {site.phone.display}</span>
+        </a>
+        <a className="site-header__contact site-header__mail" href={site.email.href}>
+          <Icon name="mail" />
+          <span className="visually-hidden">Escribir un correo a {site.email.address}</span>
+        </a>
+
         <a
           className="btn btn--sm site-header__cta"
           href={hrefFor(FORM_ANCHOR)}
@@ -208,6 +218,12 @@ export function Header({ variant = 'home' }) {
                 <Icon name="whatsapp" />
                 WhatsApp
                 <span className="visually-hidden"> (se abre en una pestaña nueva)</span>
+              </a>
+            </li>
+            <li>
+              <a href={site.email.href}>
+                <Icon name="mail" />
+                {site.email.address}
               </a>
             </li>
             <li>

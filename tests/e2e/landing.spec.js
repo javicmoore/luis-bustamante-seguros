@@ -14,9 +14,10 @@ test.describe('estructura y contenido', () => {
   test('bloques en orden, anclas del header y sin secciones eliminadas', async ({ page }) => {
     await open(page, '/');
     const ids = await page.$$eval('main > section', (els) => els.map((el) => el.id));
-    const expected = ['inicio', 'simulador', 'asesoria', 'servicios', 'sobre-luis', 'faq'];
-    // En producción, marcas/video/testimonios solo aparecen con contenido real.
+    const expected = ['inicio', 'simulador', 'asesoria', 'sobre-luis', 'video', 'testimonios', 'servicios', 'faq'];
     expect(ids.filter((id) => expected.includes(id))).toEqual(expected);
+    // "Sobre Luis" y el video son consecutivos, justo después del formulario.
+    expect(ids.slice(ids.indexOf('asesoria'), ids.indexOf('asesoria') + 3)).toEqual(['asesoria', 'sobre-luis', 'video']);
     await expect(page.locator('#site-footer')).toBeVisible();
 
     const nav = await page.$$eval('.site-header__nav a', (as) => as.map((a) => [a.textContent.trim(), a.getAttribute('href')]));
@@ -25,6 +26,8 @@ test.describe('estructura y contenido', () => {
       ['Simulador', '#simulador'],
       ['Asesoría', '#asesoria'],
       ['Sobre Luis', '#sobre-luis'],
+      ['Video', '#video'],
+      ['Testimonios', '#testimonios'],
       ['FAQ', '#faq'],
     ]);
     const body = await page.locator('body').innerText();
@@ -67,7 +70,10 @@ test.describe('estructura y contenido', () => {
       const tels = await page.$$eval('a[href^="tel:"]', (as) => [...new Set(as.map((a) => a.getAttribute('href')))]);
       expect(tels).toEqual(['tel:+526863872193']);
       const wa = await page.$$eval('a[href*="wa.me"]', (as) => [...new Set(as.map((a) => a.getAttribute('href')))]);
-      expect(wa).toEqual(['https://wa.me/526863872193']);
+      for (const href of wa) expect(href).toMatch(/^https:\/\/wa\.me\/526863872193(\?text=[^&]+)?$/);
+      expect(wa).toContain('https://wa.me/526863872193');
+      const mail = await page.$$eval('a[href^="mailto:"]', (as) => [...new Set(as.map((a) => a.getAttribute('href')))]);
+      expect(mail).toEqual(['mailto:luis.bpaz@outlook.com']);
       const text = await page.locator('body').innerText();
       const phones = text.match(/\b\d{3}\s?\d{3}\s?\d{4}\b/g) || [];
       for (const phone of phones) expect(phone.replace(/\s/g, '')).toBe('6863872193');
@@ -252,9 +258,9 @@ test.describe('"Conoce a Luis": video de presentación', () => {
 
 test.describe('testimonios', () => {
   const QUOTES = [
-    ['Karla G.', 'Profesionista independiente', '“Antes veía el retiro como algo muy lejano. Hoy entiendo la importancia de empezar a prepararme desde ahora y construir poco a poco un respaldo para mi futuro. Agradezco a Luis por explicarme todo de manera clara y puntual.”'],
-    ['Sergio C.', 'Ingeniero', '“Lo que más me gustó de este plan es poder establecer una estrategia de ahorro acorde con mis ingresos y objetivos financieros. Desde el principio, Luis me explicó cómo funciona y qué aspectos debía considerar antes de tomar una decisión.”'],
-    ['Alberto G.', 'Empresario', '“No quería otro seguro más. Le dije a Luis que buscaba algo que me sirviera a mí. Me enseñó cómo separar mi ahorro para mi retiro y a la vez dejar una base para la educación de mis hijos. Ahora todo lo que ahorro tiene un para qué.”'],
+    ['Karla G.', 'Profesionista independiente', ['“Antes veía el retiro como algo muy lejano. Hoy entiendo la importancia de empezar a prepararme desde ahora y construir poco a poco un respaldo para mi futuro.', 'Agradezco a Luis por explicarme todo de manera clara y puntual.”']],
+    ['Sergio C.', 'Ingeniero', ['“Lo que más me gustó de este plan es poder establecer una estrategia de ahorro acorde con mis ingresos y objetivos financieros.', 'Desde el principio, Luis me explicó cómo funciona y qué aspectos debía considerar antes de tomar una decisión.”']],
+    ['Alberto G.', 'Empresario', ['“No quería otro seguro más. Le dije a Luis que buscaba algo que me sirviera a mí.', 'Me enseñó cómo separar mi ahorro para mi retiro y a la vez dejar una base para la educación de mis hijos.', 'Ahora todo lo que ahorro tiene un para qué.”']],
   ];
 
   for (const [width, height, columns] of [
@@ -268,7 +274,7 @@ test.describe('testimonios', () => {
       await page.setViewportSize({ width, height });
       await open(page, '/');
       const ids = await page.$$eval('main > section', (els) => els.map((el) => el.id));
-      expect(ids.slice(ids.indexOf('video'), ids.indexOf('video') + 3)).toEqual(['video', 'testimonios', 'faq']);
+      expect(ids.slice(ids.indexOf('video'), ids.indexOf('video') + 3)).toEqual(['video', 'testimonios', 'servicios']);
       const section = page.locator('#testimonios');
       await expect(section.locator('#testimonials-title')).toHaveText('Lo que comparten mis clientes');
       const cards = section.locator('li.quote');
@@ -276,6 +282,14 @@ test.describe('testimonios', () => {
       for (const [i, [name, context, quote]] of QUOTES.entries()) {
         const card = cards.nth(i);
         await expect(card.locator('blockquote p')).toHaveText(quote);
+        const align = await card.evaluate((li) => ({
+          body: getComputedStyle(li.querySelector('blockquote p')).textAlign,
+          last: getComputedStyle(li.querySelector('blockquote p')).textAlignLast,
+          caption: getComputedStyle(li.querySelector('figcaption')).textAlign,
+        }));
+        expect(align.body).toBe('justify');
+        expect(align.last).toBe('left');
+        expect(['left', 'start']).toContain(align.caption);
         await expect(card.locator('figcaption .quote__name')).toHaveText(name);
         await expect(card.locator('figcaption .quote__context')).toHaveText(context);
       }
@@ -328,6 +342,132 @@ test.describe('apariciones al navegar por anclas', () => {
       }
     });
   }
+});
+
+test.describe('header, hero y accesos directos', () => {
+  test('escritorio: enlaces y botones del header en una línea recta, con llamada y correo', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 900 });
+    await open(page, '/');
+    await expect(page.locator('.site-header__nav')).toBeVisible();
+    await expect(page.locator('.site-header__toggle')).toBeHidden();
+    await expect(page.locator('.site-header__call')).toHaveAttribute('href', 'tel:+526863872193');
+    await expect(page.locator('.site-header__call')).toContainText('Llamar');
+    await expect(page.locator('.site-header__mail')).toHaveAttribute('href', 'mailto:luis.bpaz@outlook.com');
+    await expect(page.locator('.site-header .wordmark__role')).toHaveText('Asesor financiero y agente de seguros');
+    const bar = await page.locator('.site-header__bar').evaluate((el) => {
+      const items = [...el.children].filter((c) => getComputedStyle(c).display !== 'none');
+      const centers = items.map((c) => c.getBoundingClientRect()).map((r) => r.top + r.height / 2);
+      const links = [...el.querySelectorAll('.site-header__nav a, .site-header__contact, .site-header__cta')].map((a) => a.getBoundingClientRect());
+      return {
+        spread: Math.max(...centers) - Math.min(...centers),
+        linkSpread: Math.max(...links.map((r) => r.top + r.height / 2)) - Math.min(...links.map((r) => r.top + r.height / 2)),
+        overflow: el.scrollWidth - el.clientWidth,
+        rotated: [...el.querySelectorAll('*')].filter((n) => !['none', '0deg'].includes(getComputedStyle(n).rotate) || getComputedStyle(n).transform.startsWith('matrix(') && getComputedStyle(n).transform !== 'matrix(1, 0, 0, 1, 0, 0)').length,
+      };
+    });
+    expect(bar.spread).toBeLessThanOrEqual(1.5);
+    expect(bar.linkSpread).toBeLessThanOrEqual(1.5);
+    expect(bar.overflow).toBeLessThanOrEqual(0);
+    expect(bar.rotated).toBe(0);
+    // Tarjetas del retrato rectas en escritorio.
+    const cards = await page.$$eval('.hero__card', (els) => els.map((el) => getComputedStyle(el).rotate));
+    expect(cards.every((r) => r === 'none' || r === '0deg')).toBe(true);
+  });
+
+  for (const width of [1024, 1280]) {
+    test(`${width}px: menú compacto sin amontonamiento, con llamada y correo`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await open(page, '/');
+      await expect(page.locator('.site-header__nav')).toBeHidden();
+      await expect(page.locator('.site-header__toggle')).toBeVisible();
+      await expect(page.locator('.site-header__call')).toBeVisible();
+      await expect(page.locator('.site-header__mail')).toBeVisible();
+      expect(await page.locator('.site-header__bar').evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+    });
+  }
+
+  test('menú móvil con Video, Testimonios, llamada y correo', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, '/');
+    await page.locator('.site-header__toggle').click();
+    const menu = page.locator('#mobile-menu');
+    await expect(menu.locator('.mobile-menu__list a')).toHaveText([/Inicio/, /Simulador/, /Asesoría/, /Sobre Luis/, /Video/, /Testimonios/, /FAQ/]);
+    await expect(menu.locator('a[href="tel:+526863872193"]')).toBeVisible();
+    await expect(menu.locator('a[href="mailto:luis.bpaz@outlook.com"]')).toBeVisible();
+    for (const [label, id] of [['Video', 'video-title'], ['Testimonios', 'testimonials-title']]) {
+      if (!(await menu.isVisible())) await page.locator('.site-header__toggle').click();
+      await menu.getByRole('link', { name: new RegExp(label) }).click();
+      await page.waitForTimeout(1300);
+      const title = await page.locator(`#${id}`).boundingBox();
+      const bar = await page.locator('.site-header__bar').boundingBox();
+      expect(title.y).toBeGreaterThanOrEqual(bar.y + bar.height - 1);
+      expect(title.y).toBeLessThan(844);
+    }
+  });
+
+  test('hero: sin los textos retirados y con cinco accesos a WhatsApp con mensaje prellenado', async ({ page }) => {
+    await open(page, '/');
+    const hero = page.locator('#inicio');
+    await expect(hero).not.toContainText('Seguros, ahorro y retiro según tus objetivos');
+    await expect(hero).not.toContainText('Cotización y asesoría gratuitas');
+    await expect(hero.locator('.hero__meta, .hero__lead')).toHaveCount(0);
+    await expect(hero.locator('#hero-title')).toContainText('Protege lo que has construido.');
+    const links = hero.locator('.hero__shortcut');
+    await expect(links).toHaveCount(5);
+    const data = await links.evaluateAll((as) =>
+      as.map((a) => {
+        const url = new URL(a.href);
+        const r = a.getBoundingClientRect();
+        return { label: a.querySelector('.hero__shortcut-label').textContent, base: url.origin + url.pathname, text: url.searchParams.get('text'), raw: a.getAttribute('href'), target: a.target, h: r.height, w: r.width };
+      }),
+    );
+    expect(data.map((d) => [d.label, d.text])).toEqual([
+      ['Auto', 'Hola Luis, me interesa un seguro de auto.'],
+      ['Gastos médicos mayores', 'Hola Luis, me interesa un seguro de gastos médicos mayores.'],
+      ['Educación', 'Hola Luis, me interesa un plan para la educación.'],
+      ['Hogar', 'Hola Luis, me interesa un seguro de hogar.'],
+      ['Seguro de vida', 'Hola Luis, me interesa un seguro de vida.'],
+    ]);
+    for (const d of data) {
+      expect(d.base).toBe('https://wa.me/526863872193');
+      expect(d.raw).toContain(encodeURIComponent(d.text));
+      expect(d.target).toBe('_blank');
+      expect(d.h).toBeGreaterThanOrEqual(44);
+      expect(d.w).toBeGreaterThanOrEqual(44);
+    }
+    // Teclado: el foco es visible en los accesos.
+    await links.first().focus();
+    expect(await links.first().evaluate((a) => getComputedStyle(a).outlineStyle)).not.toBe('none');
+  });
+});
+
+test.describe('beneficios y video', () => {
+  test('"Beneficios" en tarjetas, con las tarjetas de servicios conservadas debajo', async ({ page }) => {
+    await open(page, '/');
+    const section = page.locator('#servicios');
+    await expect(section.locator('.eyebrow').first()).toHaveText('Beneficios');
+    await expect(section.locator('.benefit__title')).toHaveText([
+      'Construye un respaldo para tu retiro',
+      'Planea según tus objetivos',
+      'Conoce las condiciones antes de decidir',
+    ]);
+    await expect(section.locator('.benefit__text')).toHaveText([
+      'Explora cómo una estrategia de aportaciones puede ayudarte a prepararte para esa etapa.',
+      'Revisa con Luis opciones acordes con tu horizonte y capacidad de ahorro.',
+      'Entiende aportaciones, disponibilidad, costos y posibles beneficios fiscales de cada alternativa.',
+    ]);
+    await expect(section.locator('.benefit__index')).toHaveCount(0);
+    await expect(section.locator('.svc-card')).toHaveCount(5);
+    await expect(section).not.toContainText(/sin restricciones|garantiza|no se devalúa/i);
+  });
+
+  test('identidad junto al video: logo y cargo actualizados', async ({ page }) => {
+    await open(page, '/');
+    const identity = page.locator('#video .video-intro__identity');
+    await expect(identity).toContainText('Luis Bustamante');
+    await expect(identity).toContainText('Asesor financiero y agente de seguros');
+    await expect(identity.locator('img')).toHaveAttribute('src', '/brand/isotipo.png');
+  });
 });
 
 test.describe('header y navegación', () => {
@@ -409,8 +549,8 @@ test.describe('simulador', () => {
     await expect(page.getByText('Descubre cómo el tiempo influye en el ahorro que puedes construir para tu futuro.')).toBeVisible();
     await expect(page.locator('label[for="sim-rate-range"]')).toHaveText('Tasa anual ilustrativa');
     await expect(page.getByText('Tasa anual sugerida para esta simulación: de 10 a 12 %')).toBeVisible();
-    await expect(page.locator('.sim__disclaimer')).toContainText('supuesto ilustrativo indicado por Luis');
-    await expect(page.locator('.sim__disclaimer')).toContainText('no representa una tasa contratada ni un rendimiento garantizado');
+    await expect(page.locator('.sim-assumptions')).toContainText('supuesto ilustrativo indicado por Luis');
+    await expect(page.locator('.sim-assumptions')).toContainText('no representa una tasa contratada ni un rendimiento garantizado');
     await expect(page.locator('#sim-rate-input')).toHaveValue('10');
     await expect(page.locator('#sim-contribution-input')).toHaveValue('3,000');
 
@@ -467,7 +607,8 @@ test.describe('simulador', () => {
   test('los cambios recalculan cifras y gráfico', async ({ page }) => {
     await open(page, '/');
     const figures = page.locator('.sim-figure dd');
-    const before = await page.locator('.sim-chart__line-scenario').getAttribute('d');
+    const lastBar = page.locator('.sim-chart__bar-scenario').last();
+    const before = await lastBar.getAttribute('height');
     const rate = page.locator('#sim-rate-input');
     await rate.fill('6');
     await rate.press('Enter');
@@ -478,7 +619,62 @@ test.describe('simulador', () => {
     const expected = `$${Math.round(fv).toLocaleString('en-US')}`;
     await expect(figures.nth(1)).toHaveText(expected);
     await expect(figures.nth(0)).toHaveText('$540,000');
-    expect(await page.locator('.sim-chart__line-scenario').getAttribute('d')).not.toBe(before);
+    expect(await lastBar.getAttribute('height')).not.toBe(before);
+  });
+
+  test('gráfica de barras con eje desde cero, leyenda y valores accesibles', async ({ page }) => {
+    await open(page, '/');
+    const chart = page.locator('.sim-chart');
+    await expect(chart.locator('.sim-chart__bar-contrib')).toHaveCount(8);
+    await expect(chart.locator('.sim-chart__bar-scenario')).toHaveCount(8);
+    await expect(chart.locator('.sim-chart__line-scenario')).toHaveCount(0);
+    await expect(chart.locator('.sim-chart__ylabel').last()).toHaveText('$0');
+    await expect(chart.locator('.sim-chart__legend li')).toHaveText(['Aportaciones acumuladas', 'Escenario ilustrativo']);
+    // Todas las barras parten de la misma base (eje en cero, sin escala truncada).
+    const bottoms = await chart.locator('rect').evaluateAll((rs) => [...new Set(rs.map((r) => Math.round(Number(r.getAttribute('y')) + Number(r.getAttribute('height')))))]);
+    expect(bottoms).toHaveLength(1);
+    const table = chart.locator('table');
+    await expect(table.locator('tbody tr')).toHaveCount(8);
+    await expect(table.locator('tbody tr').last()).toContainText('$540,000');
+    // "Cómo se calcula" ya no es un párrafo visible: queda dentro de "Ver supuestos".
+    await expect(page.locator('.sim__controls')).not.toContainText('Cómo se calcula');
+    await expect(page.getByText(/^Cómo se calcula/)).toBeHidden();
+  });
+
+  test('costo de esperar: comparación dinámica, plazo corto, 0 % y mínimo de aportación', async ({ page }) => {
+    await open(page, '/');
+    const wait = page.locator('.sim-wait');
+    const money = (v) => `$${Math.round(v).toLocaleString('en-US')}`;
+    const fv = (c, m, r) => { const i = Math.pow(1 + r / 100, 1 / 12) - 1; return r === 0 ? c * m : c * ((Math.pow(1 + i, m) - 1) / i); };
+    await expect(wait.locator('.sim-wait__hook')).toHaveText('Esperar también tiene un costo');
+    await expect(wait.locator('.sim-wait__result')).toHaveText(`Si empiezas 5 años después, podrías acumular ${money(fv(3000, 180, 10) - fv(3000, 120, 10))} menos al final de este plazo.`);
+    await expect(wait.locator('.sim-wait__compare')).toContainText(`Empezando hoy${money(fv(3000, 180, 10))}`);
+    await expect(wait.locator('.sim-wait__compare')).toContainText(`Empezando en 5 años${money(fv(3000, 120, 10))}`);
+    await expect(wait).toContainText('Comparación ilustrativa, no garantizada. No incluye inflación, impuestos ni comisiones.');
+    await expect(wait).not.toContainText(/perdid|penaliz|ganancia garantizada/i);
+
+    const rate = page.locator('#sim-rate-input');
+    await rate.fill('0');
+    await rate.press('Enter');
+    await expect(wait.locator('.sim-wait__result strong')).toHaveText('$180,000');
+
+    const amount = page.locator('#sim-contribution-input');
+    await amount.fill('1500');
+    await amount.press('Enter');
+    await expect(wait.locator('.sim-wait__result strong')).toHaveText('$120,000');
+
+    const years = page.locator('#sim-years-input');
+    await years.fill('5');
+    await years.press('Enter');
+    await expect(wait.locator('.sim-wait__result')).toHaveText('Para comparar empezar hoy con empezar 5 años después, elige un plazo mayor a 5 años.');
+    await expect(wait.locator('.sim-wait__compare')).toHaveCount(0);
+
+    // Supuestos en un desplegable accesible.
+    const details = wait.locator('details');
+    await expect(details.locator('summary')).toHaveText('Ver supuestos');
+    await details.locator('summary').click();
+    await expect(details).toContainText('aportación al final de cada mes');
+    await expect(details).toContainText('de 10 a 12 %');
   });
 
   test('plazos límite y teclado en los sliders', async ({ page }) => {
@@ -538,7 +734,7 @@ test.describe('movimiento reducido', () => {
 
   test('la pregunta de interés del formulario aparece sin animación', async ({ page }) => {
     await open(page, '/#asesoria');
-    await page.locator('label.choice__option').filter({ hasText: /^Sí$/ }).click();
+    await page.locator('label.choice__option').filter({ hasText: /^Un seguro$/ }).click();
     const fieldset = page.locator('.interest__fieldset');
     await expect(fieldset).toBeVisible();
     const motion = await fieldset.evaluate((el) => ({

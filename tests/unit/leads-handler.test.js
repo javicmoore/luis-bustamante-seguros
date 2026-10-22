@@ -31,23 +31,27 @@ describe('POST /api/leads — recepción correcta', () => {
 
     expect(notifier.calls).toHaveLength(1);
     const vars = notifier.calls[0].variables;
-    expect(Object.keys(vars)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8']);
+    expect(Object.keys(vars)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9']);
     expect(vars[1]).toBe('para PPR');
     expect(vars[2]).toBe(body.id);
     expect(vars[3]).toBe('Ana López');
     expect(vars[4]).toBe('34');
-    expect(vars[5]).toBe('+52 686 000 1234');
-    expect(vars[6]).toBe('PPR / retiro');
-    expect(vars[7]).toBe('Sí');
-    expect(vars[8]).toMatch(/hora de Mexicali/);
+    expect(vars[5]).toBe('Teléfono (llamada o WhatsApp)');
+    expect(vars[6]).toBe('+52 686 000 1234');
+    expect(vars[7]).toBe('PPR / retiro');
+    expect(vars[8]).toBe('De $30,000 a menos de $50,000 MXN');
+    expect(vars[9]).toMatch(/hora de Mexicali/);
     for (const v of Object.values(vars)) expect(v).not.toMatch(/[\r\n\t]| {5,}/);
 
     const record = await store.hgetall(`lead:${body.id}`);
     expect(record).toMatchObject({
       name: 'Ana López',
       age: '34',
+      contactMethod: 'phone',
       phone: '+526860001234',
-      savings: 'si',
+      email: '',
+      income: '30_50',
+      interestType: 'ahorro',
       interest: 'ppr_retiro',
       notify: 'accepted',
     });
@@ -160,8 +164,8 @@ describe('validación y manipulación de campos', () => {
       [{ interest: '' }, 'required'],
       [{ interest: 'seguro_de_vida' }, 'invalid'],
       [{ interest: ['gmm'] }, 'invalid'],
-      [{ savings: 'si', interest: 'gmm' }, 'incompatible'],
-      [{ savings: 'no_aplica', interest: 'educacion' }, 'incompatible'],
+      [{ interestType: 'ahorro', interest: 'gmm' }, 'incompatible'],
+      [{ interestType: 'seguro', interest: 'educacion' }, 'incompatible'],
     ];
     for (const [c, code] of cases) {
       const res = await handle(leadRequest({ ...validLead(), ...c }));
@@ -171,13 +175,43 @@ describe('validación y manipulación de campos', () => {
     expect(notifier.calls).toHaveLength(0);
   });
 
+  it('por correo: 201 con el correo en el aviso y sin teléfono', async () => {
+    const { handle, notifier, store } = setup();
+    const lead = { ...validLead(), contactMethod: 'email', email: 'Ana@Ejemplo.com', phone: undefined, phoneCountry: undefined };
+    const res = await handle(leadRequest(lead));
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    const vars = notifier.calls[0].variables;
+    expect(vars[5]).toBe('Correo electrónico');
+    expect(vars[6]).toBe('Ana@ejemplo.com');
+    const record = await store.hgetall(`lead:${body.id}`);
+    expect(record).toMatchObject({ contactMethod: 'email', email: 'Ana@ejemplo.com', phone: '' });
+  });
+
+  it('teléfono extranjero: E.164 completo en el aviso', async () => {
+    const { handle, notifier } = setup();
+    const res = await handle(leadRequest({ ...validLead(), phoneCountry: 'ES', phone: '612 345 678' }));
+    expect(res.status).toBe(201);
+    expect(notifier.calls[0].variables[6]).toBe('+34 612 34 56 78');
+  });
+
+  it('dato oculto del otro medio → 400 sin notificar', async () => {
+    const { handle, notifier } = setup();
+    const res = await handle(leadRequest({ ...validLead(), contactMethod: 'email', email: 'ana@ejemplo.com' }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ fields: { phone: 'not_allowed' } });
+    expect(notifier.calls).toHaveLength(0);
+  });
+
   it('valores fuera de rango o de tipo incorrecto → 400', async () => {
     const { handle } = setup();
     const cases = [
       { age: '12' },
       { age: '' },
       { phone: '123' },
-      { savings: 'quizá' },
+      { income: 'quizá' },
+      { contactMethod: 'carta' },
+      { phoneCountry: 'ZZ' },
       { name: '' },
       { name: 'x'.repeat(200) },
     ];

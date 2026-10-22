@@ -155,6 +155,21 @@ y reducido (20 combinaciones), con recorrido completo de la página en capturas 
 - WebKit para Windows reproduce con sus propios componentes y no expone el audio decodificado ni las
   peticiones del video: el audio en Safari debe comprobarse en un iPhone.
 
+## Ajuste del 21 de octubre: header, hero, simulador, formulario y secciones
+
+**Emulación** en Chromium y WebKit (320, 375, 390, 768, 1024 y 1366 px); no sustituye teléfonos físicos.
+
+- Header: navegación completa desde 1360 px (siete secciones, Llamar, correo y "Solicitar asesoría" en una
+  línea, centros alineados, sin rotaciones ni desbordes); por debajo, menú compacto con llamada y correo.
+- Hero: cinco accesos a WhatsApp con el mensaje prellenado y codificado (no se envía nada solo); tarjetas
+  del retrato rectas en escritorio.
+- Simulador: barras desde cero con leyenda y tabla accesible; costo de esperar comprobado con 10 %, 0 %, el
+  mínimo de $2,000 y plazos de 5 años o menos (sin comparación).
+- Formulario: correo o teléfono (México por defecto, otro país y números pegados con prefijo), ingresos e
+  interés en ambas ramas; solo viaja el dato del medio elegido.
+- La librería de teléfonos internacionales se descarga solo al usar el formulario: el JavaScript inicial
+  creció ~5 KB comprimidos en lugar de ~35 KB.
+
 ## Problemas encontrados y corregidos
 
 1. **Hidratación fallida** (React #418): un `<div>` (avatar) dentro de un `<p>`. Corregido; script de

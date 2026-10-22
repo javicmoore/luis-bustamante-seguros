@@ -211,41 +211,89 @@
   animation: swash-draw 0.45s var(--ease-soft) 450ms forwards;
 }
 
-.hero__lead {
-  max-width: 34rem;
-  animation: hero-fade-up 0.6s var(--ease-out) 200ms both;
-}
-
 .hero__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: 2rem;
+  margin-top: 0.5rem;
   animation: hero-fade-up 0.5s var(--ease-out) 150ms both;
 }
 
-.hero__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
+/* Accesos por producto: cinco enlaces a WhatsApp. En móvil, 3 + 2 centrados; desde 520 px, una
+   fila. Áreas táctiles de 76 px de alto y foco visible (global). */
+.hero__shortcuts {
+  max-width: 36rem;
   margin-top: 1.75rem;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: rgb(255 255 255 / 0.76);
   animation: hero-fade-up 0.55s var(--ease-out) 320ms both;
 }
 
-.hero__meta li {
-  display: inline-flex;
-  align-items: center;
+.hero__shortcuts-title {
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.76);
+}
+
+.hero__shortcut-list {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
-.hero__meta .icon {
-  width: 1.05rem;
-  height: 1.05rem;
-  flex: none;
+.hero__shortcut-list li {
+  grid-column: span 2;
+}
+
+.hero__shortcut-list li:nth-child(4) {
+  grid-column: 2 / span 2;
+}
+
+.hero__shortcut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 100%;
+  min-height: 4.75rem;
+  padding: 0.65rem 0.4rem;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.05);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    background-color 0.2s var(--ease-out),
+    border-color 0.2s var(--ease-out);
+}
+
+.hero__shortcut:hover {
+  border-color: rgb(200 128 64 / 0.6);
+  background: rgb(255 255 255 / 0.1);
+}
+
+.hero__shortcut-icon {
+  display: grid;
   color: var(--gold-400);
+}
+
+.hero__shortcut-icon .icon {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+@media (min-width: 520px) {
+  .hero__shortcut-list {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .hero__shortcut-list li,
+  .hero__shortcut-list li:nth-child(4) {
+    grid-column: auto;
+  }
 }
 
 /* ---------- Retrato ---------- */
@@ -311,7 +359,6 @@
   bottom: 1.25rem;
   max-width: calc(100% - 1.5rem);
   padding: 0.8rem 1.1rem;
-  rotate: -2.5deg;
 }
 
 .hero__card-name {
@@ -336,7 +383,6 @@
   gap: 0.65rem;
   padding: 0.5rem 1rem 0.5rem 0.5rem;
   text-decoration: none;
-  rotate: 3deg;
 }
 
 .hero__card:focus-visible {
@@ -445,7 +491,11 @@
   }
 
   .hero__actions {
-    margin-top: 1.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .hero__shortcuts {
+    margin-top: 1.25rem;
   }
 }
 

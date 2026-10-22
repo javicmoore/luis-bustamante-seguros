@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import '../../shared/phone-lib.js';
 import { buildNotificationVariables, previewNotification } from '../../backend/lead-message.js';
 import { validateLead } from '../../shared/lead-schema.js';
 import { validLead } from './helpers.js';
 
-const receivedAt = new Date('2026-10-11T18:30:00Z');
+const receivedAt = new Date('2026-10-21T18:30:00Z');
 
 const notice = (overrides) => {
   const result = validateLead({ ...validLead(), ...overrides });
@@ -11,47 +12,54 @@ const notice = (overrides) => {
   const args = { leadId: 'LB-TEST01', lead: result.value, receivedAt };
   return { vars: buildNotificationVariables(args), text: previewNotification(args) };
 };
+const byEmail = { contactMethod: 'email', email: 'ana@ejemplo.com', phone: undefined, phoneCountry: undefined };
 
-describe('aviso de WhatsApp para Luis', () => {
+describe('aviso de WhatsApp para Luis (plantilla v3)', () => {
   it.each([
-    ['no_aplica', 'gmm', 'Nuevo prospecto para GMM', 'Gastos médicos mayores (GMM)'],
-    ['no_aplica', 'auto', 'Nuevo prospecto para Auto', 'Auto'],
-    ['no_aplica', 'auto_turista', 'Nuevo prospecto para Auto turista', 'Auto turista'],
-    ['no_aplica', 'hogar', 'Nuevo prospecto para Hogar', 'Hogar'],
-    ['no_aplica', 'otro_seguro', 'Nuevo prospecto — Otro seguro', 'Otro seguro'],
-    ['si', 'ppr_retiro', 'Nuevo prospecto para PPR', 'PPR / retiro'],
-    ['no', 'ahorro_inversion', 'Nuevo prospecto para Ahorro e inversión', 'Ahorro e inversión'],
-    ['si', 'educacion', 'Nuevo prospecto para Educación', 'Educación'],
-    ['no', 'orientacion', 'Nuevo prospecto — Necesita orientación', 'Necesita orientación'],
-  ])('%s + %s → "%s"', (savings, interest, headline, interestText) => {
-    const { vars, text } = notice({ savings, interest });
-    const lines = text.split('\n');
-    expect(lines[0]).toBe(headline);
+    ['seguro', 'gmm', 'Nuevo prospecto para GMM', 'Gastos médicos mayores (GMM)'],
+    ['seguro', 'auto', 'Nuevo prospecto para Auto', 'Auto'],
+    ['seguro', 'auto_turista', 'Nuevo prospecto para Auto turista', 'Auto turista'],
+    ['seguro', 'hogar', 'Nuevo prospecto para Hogar', 'Hogar'],
+    ['seguro', 'otro_seguro', 'Nuevo prospecto — Otro seguro', 'Otro seguro'],
+    ['ahorro', 'ppr_retiro', 'Nuevo prospecto para PPR', 'PPR / retiro'],
+    ['ahorro', 'ahorro_inversion', 'Nuevo prospecto para Ahorro e inversión', 'Ahorro e inversión'],
+    ['ahorro', 'educacion', 'Nuevo prospecto para Educación', 'Educación'],
+    ['ahorro', 'orientacion', 'Nuevo prospecto — Necesita orientación', 'Necesita orientación'],
+  ])('%s + %s → "%s"', (interestType, interest, headline, interestText) => {
+    const { vars, text } = notice({ interestType, interest });
+    expect(text.split('\n')[0]).toBe(headline);
     expect(text).toContain(`Interés: ${interestText}`);
-    expect(vars[6]).toBe(interestText);
+    expect(vars[7]).toBe(interestText);
   });
 
-  it('incluye nombre, edad, teléfono, interés y respuesta de ahorro, más folio y hora', () => {
-    const { text } = notice({ savings: 'no_aplica', interest: 'gmm' });
+  it('por teléfono: medio preferido y número completo en formato internacional', () => {
+    const { vars, text } = notice({ phoneCountry: 'US', phone: '(213) 373-4253' });
+    expect(Object.keys(vars)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9']);
+    expect(text).toContain('Contacto preferido: Teléfono (llamada o WhatsApp)');
+    expect(text).toContain('Dato de contacto: +1 213 373 4253');
+    expect(notice({}).text).toContain('Dato de contacto: +52 686 000 1234');
+  });
+
+  it('por correo: indica el correo y no incluye teléfono', () => {
+    const { vars, text } = notice(byEmail);
+    expect(vars[5]).toBe('Correo electrónico');
+    expect(vars[6]).toBe('ana@ejemplo.com');
+    expect(text).toContain('Contacto preferido: Correo electrónico');
+    expect(text).not.toMatch(/\+52/);
+  });
+
+  it('incluye nombre, edad, interés, rango de ingresos, folio y hora', () => {
+    const { text } = notice({ income: '50_mas', interestType: 'seguro', interest: 'gmm' });
     expect(text).toContain('Folio: LB-TEST01');
     expect(text).toContain('Nombre: Ana López');
     expect(text).toContain('Edad: 34 años');
-    expect(text).toContain('Teléfono: +52 686 000 1234');
-    expect(text).toContain('Interés: Gastos médicos mayores (GMM)');
-    expect(text).toContain('¿Puede destinar parte de sus ingresos a ahorro o retiro?: Busco un seguro / No aplica');
+    expect(text).toContain('Ingresos mensuales: $50,000 MXN o más');
     expect(text).toMatch(/Recibida: .*\(hora de Mexicali\)/);
-  });
-
-  it('no deduce PPR de la respuesta "Sí": usa el interés elegido', () => {
-    const { vars, text } = notice({ savings: 'si', interest: 'orientacion' });
-    expect(vars[1]).toBe('— Necesita orientación');
-    expect(vars[7]).toBe('Sí');
-    expect(text).not.toMatch(/PPR/);
+    expect(text).not.toMatch(/destinar parte de sus ingresos/);
   });
 
   it('respeta las reglas de WhatsApp para variables: sin saltos, tabuladores ni 5+ espacios', () => {
-    const { vars } = notice({ savings: 'no_aplica', interest: 'auto_turista', name: 'Ana    María\tLópez' });
-    expect(Object.keys(vars)).toHaveLength(8);
+    const { vars } = notice({ name: 'Ana    María\tLópez' });
     for (const value of Object.values(vars)) {
       expect(value).not.toBe('');
       expect(value).not.toMatch(/[\r\n\t]| {5,}/);

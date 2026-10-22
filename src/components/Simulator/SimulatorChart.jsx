@@ -1,126 +1,65 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatCompactMoney, formatMoney } from '../../lib/format.js';
 import { niceMax, valuesAtYear } from './projection.js';
-import { prefersReducedMotion } from '../../lib/scroll.js';
 
 const HEIGHT = 230;
-const PAD = { top: 16, right: 12, bottom: 30, left: 12 };
+// Margen izquierdo reservado para las etiquetas del eje (no se superponen a las barras).
+const PAD = { top: 16, right: 8, bottom: 30, left: 46 };
 const DEFAULT_WIDTH = 560;
-const TWEEN_MS = 220;
+const MAX_GROUPS = 8;
 
-function toPixels(points, width, maxY) {
-  const innerW = width - PAD.left - PAD.right;
-  const innerH = HEIGHT - PAD.top - PAD.bottom;
-  const last = points.length - 1;
-  const x = (i) => PAD.left + (i / last) * innerW;
-  const y = (v) => PAD.top + (1 - v / maxY) * innerH;
-  return {
-    contributed: points.map((p, i) => [x(i), y(p.contributed)]),
-    scenario: points.map((p, i) => [x(i), y(p.scenario)]),
-  };
-}
-
-const linePath = (pts) => `M${pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join('L')}`;
-const baseY = HEIGHT - PAD.bottom;
-const areaPath = (pts) =>
-  `${linePath(pts)}L${pts[pts.length - 1][0].toFixed(1)},${baseY}L${pts[0][0].toFixed(1)},${baseY}Z`;
-
-function lerpPoints(from, to, t) {
-  return to.map(([x, y], i) => {
-    const [fx, fy] = from[i] || [x, y];
-    return [fx + (x - fx) * t, fy + (y - fy) * t];
-  });
+/** Años representados: hasta 8 grupos repartidos en el plazo, siempre con el último año. */
+export function chartYears(years) {
+  const groups = Math.min(years, MAX_GROUPS);
+  const list = [];
+  for (let k = 1; k <= groups; k += 1) list.push(Math.round((k * years) / groups));
+  return [...new Set(list)];
 }
 
 /**
- * Gráfico de aportaciones acumuladas vs. escenario ilustrativo. Los trazos se actualizan por
- * DOM durante una transición corta (las cifras ya muestran el valor real al instante).
+ * Barras comparables por año: aportaciones acumuladas y escenario ilustrativo. El eje vertical
+ * empieza en 0 y usa una escala "redonda" sin truncar. Los valores exactos están en una tabla
+ * para lectores de pantalla y en la lectura al pasar el cursor.
  */
-export function SimulatorChart({ projection, inputs, labels }) {
-  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+export function SimulatorChart({ inputs, years, labels }) {
   const wrapRef = useRef(null);
-  const paths = useRef({});
-  const current = useRef(null);
-  const frame = useRef(0);
-  const lastWidth = useRef(null);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
-  const [scrub, setScrub] = useState(null);
-
-  const maxY = niceMax(Math.max(projection.scenario, projection.contributed));
-  const target = useMemo(() => toPixels(projection.points, width, maxY), [projection, width, maxY]);
-
-  // Trazos iniciales (SSR/primer render). Después se actualizan solo por DOM.
-  const [initial] = useState(() => {
-    const px = toPixels(projection.points, DEFAULT_WIDTH, maxY);
-    return {
-      cArea: areaPath(px.contributed),
-      cLine: linePath(px.contributed),
-      sArea: areaPath(px.scenario),
-      sLine: linePath(px.scenario),
-    };
-  });
+  const [hover, setHover] = useState(null);
 
   useEffect(() => {
     const el = wrapRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return undefined;
     const observer = new ResizeObserver(([entry]) => {
-      const next = Math.max(260, Math.round(entry.contentRect.width));
+      const next = Math.max(240, Math.round(entry.contentRect.width));
       setWidth((prev) => (Math.abs(prev - next) > 1 ? next : prev));
     });
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    const apply = (c, s) => {
-      paths.current.cArea?.setAttribute('d', areaPath(c));
-      paths.current.cLine?.setAttribute('d', linePath(c));
-      paths.current.sArea?.setAttribute('d', areaPath(s));
-      paths.current.sLine?.setAttribute('d', linePath(s));
-      current.current = { contributed: c, scenario: s };
-    };
-    cancelAnimationFrame(frame.current);
-    const from = current.current;
-    // Cambio de ancho (medición o resize): sin transición, para no deformar el gráfico.
-    const resized = lastWidth.current !== null && lastWidth.current !== width;
-    lastWidth.current = width;
-    if (!from || resized || prefersReducedMotion()) {
-      apply(target.contributed, target.scenario);
-      return undefined;
-    }
-    const start = performance.now();
-    const step = (now) => {
-      const t = Math.min(1, (now - start) / TWEEN_MS);
-      const eased = 1 - Math.pow(1 - t, 3);
-      apply(lerpPoints(from.contributed, target.contributed, eased), lerpPoints(from.scenario, target.scenario, eased));
-      if (t < 1) frame.current = requestAnimationFrame(step);
-    };
-    frame.current = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame.current);
-  }, [target, width]);
-
-  const years = projection.months / 12;
-  const ticks = years <= 1 ? [0, years] : [0, Math.round(years / 2), years];
+  const rows = chartYears(years).map((year) => ({ year, ...valuesAtYear(inputs, year) }));
+  const last = rows[rows.length - 1];
+  const maxY = niceMax(Math.max(last.scenario, last.contributed));
   const innerW = width - PAD.left - PAD.right;
   const innerH = HEIGHT - PAD.top - PAD.bottom;
-
-  const scrubAt = (clientX) => {
-    const rect = wrapRef.current.getBoundingClientRect();
-    const ratio = Math.min(1, Math.max(0, (clientX - rect.left - PAD.left) / innerW));
-    const year = Math.round(ratio * years);
-    setScrub({ year, ...valuesAtYear(inputs, year) });
-  };
-
-  const scrubX = scrub ? PAD.left + (years ? scrub.year / years : 0) * innerW : 0;
-  const yOf = (v) => PAD.top + (1 - v / maxY) * innerH;
+  const base = PAD.top + innerH;
+  const slot = innerW / rows.length;
+  const barW = Math.max(4, Math.min(26, slot * 0.32));
+  const gap = Math.max(2, barW * 0.18);
+  const h = (v) => (v > 0 ? Math.max(1, (v / maxY) * innerH) : 0);
+  const showEvery = width / rows.length < 46 ? 2 : 1;
 
   return (
     <div
       ref={wrapRef}
       className="sim-chart"
-      onPointerMove={(e) => e.pointerType !== 'touch' && scrubAt(e.clientX)}
-      onPointerDown={(e) => scrubAt(e.clientX)}
-      onPointerLeave={(e) => e.pointerType !== 'touch' && setScrub(null)}
+      onPointerMove={(e) => {
+        if (e.pointerType === 'touch') return;
+        const rect = wrapRef.current.getBoundingClientRect();
+        const i = Math.floor((e.clientX - rect.left - PAD.left) / slot);
+        setHover(i >= 0 && i < rows.length ? i : null);
+      }}
+      onPointerLeave={() => setHover(null)}
     >
       <svg
         className="sim-chart__svg"
@@ -130,65 +69,103 @@ export function SimulatorChart({ projection, inputs, labels }) {
         role="img"
         aria-label={labels.ariaSummary}
       >
-        <defs>
-          <linearGradient id={`${uid}-gold`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#d89a5c" stopOpacity="0.38" />
-            <stop offset="1" stopColor="#d89a5c" stopOpacity="0" />
-          </linearGradient>
-        </defs>
         {[0, 0.5, 1].map((f) => (
           <line
             key={f}
-            className="sim-chart__grid"
-            x1={PAD.left}
+            className={f === 1 ? 'sim-chart__axis' : 'sim-chart__grid'}
+            x1={PAD.left - 4}
             x2={width - PAD.right}
             y1={PAD.top + f * innerH}
             y2={PAD.top + f * innerH}
           />
         ))}
-        <path ref={(el) => (paths.current.sArea = el)} className="sim-chart__area-scenario" d={initial.sArea} fill={`url(#${uid}-gold)`} />
-        <path ref={(el) => (paths.current.cArea = el)} className="sim-chart__area-contrib" d={initial.cArea} />
-        <path ref={(el) => (paths.current.cLine = el)} className="sim-chart__line-contrib" d={initial.cLine} />
-        <path ref={(el) => (paths.current.sLine = el)} className="sim-chart__line-scenario" d={initial.sLine} />
-        {[1, 0.5].map((f) => (
-          <text key={f} className="sim-chart__ylabel" x={PAD.left + 2} y={PAD.top + (1 - f) * innerH - 6}>
-            {formatCompactMoney(maxY * f)}
-          </text>
-        ))}
-        {ticks.map((t, i) => (
+        {rows.map((row, i) => {
+          const cx = PAD.left + slot * i + slot / 2;
+          return (
+            <g key={row.year} className={`sim-chart__group${hover === i ? ' is-active' : ''}`}>
+              <rect
+                className="sim-chart__bar-contrib"
+                x={(cx - gap / 2 - barW).toFixed(1)}
+                y={(base - h(row.contributed)).toFixed(1)}
+                width={barW.toFixed(1)}
+                height={h(row.contributed).toFixed(1)}
+                rx="2"
+              />
+              <rect
+                className="sim-chart__bar-scenario"
+                x={(cx + gap / 2).toFixed(1)}
+                y={(base - h(row.scenario)).toFixed(1)}
+                width={barW.toFixed(1)}
+                height={h(row.scenario).toFixed(1)}
+                rx="2"
+              />
+              {i % showEvery === showEvery - 1 || i === rows.length - 1 ? (
+                <text className="sim-chart__xlabel" x={cx} y={HEIGHT - 8} textAnchor="middle">
+                  {`Año ${row.year}`}
+                </text>
+              ) : null}
+            </g>
+          );
+        })}
+        {[1, 0.5, 0].map((f) => (
           <text
-            key={`${t}-${i}`}
-            className="sim-chart__xlabel"
-            x={PAD.left + (years ? t / years : 0) * innerW}
-            y={HEIGHT - 8}
-            textAnchor={i === 0 ? 'start' : i === ticks.length - 1 ? 'end' : 'middle'}
+            key={f}
+            className="sim-chart__ylabel"
+            x={PAD.left - 10}
+            y={PAD.top + (1 - f) * innerH + 4}
+            textAnchor="end"
           >
-            {t === 0 ? 'Hoy' : `Año ${t}`}
+            {f === 0 ? '$0' : formatCompactMoney(maxY * f)}
           </text>
         ))}
-        {scrub ? (
-          <g className="sim-chart__scrub">
-            <line x1={scrubX} x2={scrubX} y1={PAD.top} y2={baseY} />
-            <circle className="is-contrib" cx={scrubX} cy={yOf(scrub.contributed)} r="4.5" />
-            <circle className="is-scenario" cx={scrubX} cy={yOf(scrub.scenario)} r="4.5" />
-          </g>
-        ) : null}
       </svg>
-      {scrub ? (
+
+      {hover !== null ? (
         <div
-          className={`sim-chart__tip${scrubX > width * 0.6 ? ' is-left' : ''}`}
-          ref={(el) => el && el.style.setProperty('--x', `${scrubX}px`)}
+          className={`sim-chart__tip${hover > rows.length / 2 ? ' is-left' : ''}`}
+          ref={(el) => el && el.style.setProperty('--x', `${PAD.left + slot * hover + slot / 2}px`)}
           aria-hidden="true"
         >
-          <strong>{scrub.year === 0 ? 'Hoy' : `Año ${scrub.year}`}</strong>
+          <strong>{`Año ${rows[hover].year}`}</strong>
           <span>
-            {labels.contributed}: {formatMoney(scrub.contributed)}
+            {labels.contributed}: {formatMoney(rows[hover].contributed)}
           </span>
           <span className="is-scenario">
-            {labels.scenario}: {formatMoney(scrub.scenario)}
+            {labels.scenario}: {formatMoney(rows[hover].scenario)}
           </span>
         </div>
       ) : null}
+
+      <ul className="sim-chart__legend" aria-hidden="true">
+        <li>
+          <span className="sim-chart__key sim-chart__key--contrib" />
+          {labels.contributed}
+        </li>
+        <li>
+          <span className="sim-chart__key sim-chart__key--scenario" />
+          {labels.scenario}
+        </li>
+      </ul>
+
+      <table className="visually-hidden">
+        <caption>{labels.tableCaption}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Año</th>
+            <th scope="col">{labels.contributed}</th>
+            <th scope="col">{labels.scenario}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.year}>
+              <th scope="row">{row.year}</th>
+              <td>{formatMoney(row.contributed)}</td>
+              <td>{formatMoney(row.scenario)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

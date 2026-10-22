@@ -1,6 +1,6 @@
 // Identidad y contacto autorizados de Luis Bustamante.
-// Fuente: datos confirmados por Javier. No agregar domicilio, cédula, correo ni dominio
-// hasta que se confirmen.
+// Fuente: datos confirmados por Javier. No agregar domicilio, cédula ni dominio hasta que se
+// confirmen. Correo público confirmado por Javier el 21 de octubre de 2026.
 export const site = {
   name: 'Luis Bustamante',
   role: 'Agente de seguros y asesor financiero',
@@ -22,6 +22,10 @@ export const site = {
     // Enlace de contacto directo y voluntario (sin mensaje prellenado).
     href: 'https://wa.me/526863872193',
   },
+  email: {
+    address: 'luis.bpaz@outlook.com',
+    href: 'mailto:luis.bpaz@outlook.com',
+  },
   instagram: {
     handle: '@luisbustamante.seguros',
     href: 'https://www.instagram.com/luisbustamante.seguros/',
@@ -34,8 +38,9 @@ export const site = {
   logo: {
     full: { src: '/brand/logo.webp', fallback: '/brand/logo.png', width: 503, height: 300 },
     isotype: { src: '/brand/isotipo.webp', fallback: '/brand/isotipo.png', width: 210, height: 192 },
-    alt: 'Luis Bustamante, agente de seguros',
-    tagline: 'Agente de seguros',
+    alt: 'Luis Bustamante, asesor financiero y agente de seguros',
+    // Cargo junto al logo (header) y en la identidad del video.
+    tagline: 'Asesor financiero y agente de seguros',
   },
 };
 

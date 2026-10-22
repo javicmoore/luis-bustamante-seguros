@@ -6,12 +6,23 @@ export const heroCopy = {
   eyebrowTopic: 'Seguros y planeación patrimonial',
   titleLead: 'Protege lo que has construido.',
   titleAccent: 'Planea lo que viene.',
-  description:
-    'Seguros, ahorro y retiro según tus objetivos, con asesoría personal desde Mexicali para todo México.',
   primaryCta: 'Solicitar asesoría',
   secondaryCta: 'Explorar mi ahorro',
-  locationNote: 'Mexicali, B.C. · Asesoría en todo México',
-  freeNote: 'Cotización y asesoría gratuitas',
+  // Accesos directos por producto: abren WhatsApp con un mensaje prellenado que el visitante
+  // decide enviar (nada se envía automáticamente).
+  shortcutsTitle: 'Escríbele por WhatsApp sobre:',
+  shortcuts: [
+    { id: 'auto', label: 'Auto', icon: 'car', message: 'Hola Luis, me interesa un seguro de auto.' },
+    {
+      id: 'gmm',
+      label: 'Gastos médicos mayores',
+      icon: 'medical',
+      message: 'Hola Luis, me interesa un seguro de gastos médicos mayores.',
+    },
+    { id: 'educacion', label: 'Educación', icon: 'education', message: 'Hola Luis, me interesa un plan para la educación.' },
+    { id: 'hogar', label: 'Hogar', icon: 'home', message: 'Hola Luis, me interesa un seguro de hogar.' },
+    { id: 'vida', label: 'Seguro de vida', icon: 'life', message: 'Hola Luis, me interesa un seguro de vida.' },
+  ],
 };
 
 export const simulatorCopy = {
@@ -33,6 +44,18 @@ export const simulatorCopy = {
   zeroRateNote: 'Con una tasa de 0 %, el escenario ilustrativo es igual a tus aportaciones.',
   method:
     'Cómo se calcula: una aportación al final de cada mes, sin aportación inicial. La tasa anual efectiva se convierte a mensual con (1 + tasa)^(1/12) − 1.',
+  // Costo de esperar: empezar hoy contra empezar 5 años después (misma aportación, tasa y fecha final).
+  waitHook: 'Esperar también tiene un costo',
+  waitLead: 'Si empiezas 5 años después, podrías acumular',
+  waitTail: 'menos al final de este plazo.',
+  waitToday: 'Empezando hoy',
+  waitLater: 'Empezando en 5 años',
+  waitTooShort:
+    'Para comparar empezar hoy con empezar 5 años después, elige un plazo mayor a 5 años.',
+  waitFine: 'Comparación ilustrativa, no garantizada. No incluye inflación, impuestos ni comisiones.',
+  assumptionsLabel: 'Ver supuestos',
+  waitAssumption:
+    'Quien empieza en 5 años aporta la misma cantidad mensual con la misma tasa y termina en la misma fecha: aporta durante 5 años menos, sin aportar durante la espera ni compensar después.',
   disclaimer:
     'Simulación educativa: no es una cotización ni un rendimiento garantizado. No considera inflación, impuestos, comisiones ni las condiciones de un producto específico.',
   cta: 'Quiero revisar mis opciones con Luis',
@@ -46,17 +69,27 @@ export const formCopy = {
   points: [
     'Cotización y asesoría gratuitas.',
     'Desde Mexicali, para personas de todo México.',
-    'Solo pedimos lo necesario: sin correo, ingresos ni datos médicos.',
+    'Solo pedimos lo necesario para contactarte y orientarte; nunca datos médicos.',
   ],
   nameLabel: 'Nombre',
   ageLabel: 'Edad',
   ageHelp: 'Años cumplidos.',
-  phoneLabel: 'Teléfono de contacto',
-  phoneHelp: '10 dígitos. Luis te contactará a este número.',
-  savingsLegend: 'Si te interesa ahorro o retiro, ¿puedes destinar parte de tus ingresos a ese objetivo?',
-  savingsHelp: 'Cualquier respuesta es válida y no condiciona tu solicitud.',
-  consentLabel:
-    'Autorizo que Luis Bustamante me contacte por teléfono o WhatsApp para dar seguimiento a esta solicitud.',
+  contactLegend: '¿Cómo prefieres que Luis te contacte?',
+  emailLabel: 'Correo electrónico',
+  emailHelp: 'Luis te responderá a esta dirección.',
+  phoneCountryLabel: 'País y prefijo',
+  phoneLabel: 'Número de teléfono',
+  phoneHelpMx: '10 dígitos, sin el +52.',
+  phoneHelpIntl: 'Sin el prefijo del país. También puedes pegar el número completo con su prefijo.',
+  incomeLegend: '¿En qué rango se encuentran tus ingresos mensuales?',
+  incomeHelp: 'En pesos mexicanos. Solo orienta la conversación; no condiciona tu solicitud.',
+  interestTypeLegend: '¿Qué te interesa?',
+  // La autorización se adapta al medio elegido.
+  consentLabels: {
+    none: 'Autorizo que Luis Bustamante me contacte por el medio que elija arriba para dar seguimiento a esta solicitud.',
+    email: 'Autorizo que Luis Bustamante me contacte por correo electrónico para dar seguimiento a esta solicitud.',
+    phone: 'Autorizo que Luis Bustamante me contacte por llamada o WhatsApp para dar seguimiento a esta solicitud.',
+  },
   privacyShort:
     'Tus datos se usan solo para atender esta solicitud. No se comparten para publicidad ni se usan para otras campañas.',
   privacyLink: 'Leer el aviso de privacidad',
@@ -65,7 +98,7 @@ export const formCopy = {
 };
 
 export const servicesCopy = {
-  eyebrow: 'Beneficios y servicios',
+  eyebrow: 'Beneficios',
   title: 'Asesoría para proteger lo que tienes y avanzar hacia lo que quieres.',
   intro:
     'Cada persona llega con una pregunta distinta. Estas son las áreas en las que Luis puede orientarte.',

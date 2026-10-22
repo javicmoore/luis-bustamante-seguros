@@ -59,6 +59,10 @@ export function About() {
               WhatsApp {site.whatsapp.display}
               <span className="visually-hidden"> (se abre en una pestaña nueva)</span>
             </a>
+            <a className="about__link" href={site.email.href}>
+              <Icon name="mail" />
+              {site.email.address}
+            </a>
             <a className="about__link" href={site.instagram.href} target="_blank" rel="noopener noreferrer">
               <Icon name="instagram" />
               {site.instagram.handle}

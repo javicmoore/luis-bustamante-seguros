@@ -57,8 +57,6 @@ export function Hero() {
             </span>
           </h1>
 
-          <p className="hero__lead lead">{heroCopy.description}</p>
-
           <div className="hero__actions" id="hero-actions">
             <a className="btn btn--gold" href={`#${FORM_ANCHOR}`} onClick={(e) => jump(e, FORM_ANCHOR)}>
               {heroCopy.primaryCta}
@@ -73,16 +71,29 @@ export function Hero() {
             </a>
           </div>
 
-          <ul className="hero__meta" role="list">
-            <li>
-              <Icon name="pin" />
-              {heroCopy.locationNote}
-            </li>
-            <li>
-              <Icon name="check" />
-              {heroCopy.freeNote}
-            </li>
-          </ul>
+          <div className="hero__shortcuts">
+            <p id="hero-shortcuts-title" className="hero__shortcuts-title">
+              {heroCopy.shortcutsTitle}
+            </p>
+            <ul className="hero__shortcut-list" role="list" aria-labelledby="hero-shortcuts-title">
+              {heroCopy.shortcuts.map((item) => (
+                <li key={item.id}>
+                  <a
+                    className="hero__shortcut"
+                    href={`${site.whatsapp.href}?text=${encodeURIComponent(item.message)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span className="hero__shortcut-icon" aria-hidden="true">
+                      <Icon name={item.icon} />
+                    </span>
+                    <span className="hero__shortcut-label">{item.label}</span>
+                    <span className="visually-hidden"> (WhatsApp con mensaje prellenado, se abre en una pestaña nueva)</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <div className="hero__visual">

@@ -15,8 +15,9 @@ import { MobileCtaBar } from './components/MobileCtaBar/MobileCtaBar.jsx';
 import { initReveal } from './lib/reveal.js';
 import { track } from './lib/analytics.js';
 
-// Orden final: 1 Hero · 2 Marcas · 3 Simulador · 4 Formulario · 5 Beneficios y servicios ·
-// 6 Sobre Luis · 7 Video ("Conoce a Luis", justo después de Sobre Luis) · 8 Testimonios · 9 FAQ · 10 Footer (+ header y aviso de privacidad).
+// Orden final (21 oct 2026): 1 Hero · 2 Marcas · 3 Simulador · 4 Formulario · 5 Sobre Luis ·
+// 6 Video ("Conoce a Luis") · 7 Testimonios · 8 Beneficios (con las tarjetas de servicios) · 9 FAQ ·
+// 10 Footer (+ header y aviso de privacidad).
 export function App() {
   useEffect(() => {
     track('page_view');
@@ -35,10 +36,10 @@ export function App() {
         <BrandMarquee />
         <Simulator />
         <LeadForm />
-        <Services />
         <About />
         <VideoIntro />
         <Testimonials />
+        <Services />
         <Faq />
       </main>
       <Footer variant="home" />

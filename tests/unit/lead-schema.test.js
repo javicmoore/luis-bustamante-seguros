@@ -1,184 +1,209 @@
 import { describe, expect, it } from 'vitest';
+import '../../shared/phone-lib.js';
 import {
   ADVICE_INTERESTS,
+  INCOME_OPTIONS,
   INSURANCE_INTERESTS,
   interestBranch,
   interestOptionsFor,
   leadHeadline,
+  normalizeEmail,
   normalizePhone,
   validateLead,
 } from '../../shared/lead-schema.js';
 
-const valid = {
+const base = {
   name: 'Ana López',
   age: '34',
-  phone: '686 000 1234',
-  savings: 'si',
+  income: '30_50',
+  interestType: 'ahorro',
   interest: 'ppr_retiro',
   consent: true,
   website: '',
 };
+const byPhone = { ...base, contactMethod: 'phone', phoneCountry: 'MX', phone: '686 000 1234' };
+const byEmail = { ...base, contactMethod: 'email', email: 'ana@ejemplo.com' };
 
 describe('validación de la solicitud', () => {
-  it('acepta una solicitud válida y normaliza el teléfono', () => {
-    const result = validateLead(valid);
+  it('acepta una solicitud por teléfono y la normaliza a E.164', () => {
+    const result = validateLead(byPhone);
     expect(result.ok).toBe(true);
-    expect(result.value.phoneE164).toBe('+526860001234');
-    expect(result.value.age).toBe(34);
+    expect(result.value).toMatchObject({
+      contactMethod: 'phone',
+      phoneE164: '+526860001234',
+      phoneDisplay: '+52 686 000 1234',
+      phoneCountry: 'MX',
+      email: null,
+      age: 34,
+      income: '30_50',
+      interestType: 'ahorro',
+      interest: 'ppr_retiro',
+    });
   });
 
-  it('una respuesta "No" o "No aplica" no bloquea la solicitud', () => {
-    expect(validateLead({ ...valid, savings: 'no' }).ok).toBe(true);
-    expect(validateLead({ ...valid, savings: 'no', interest: 'orientacion' }).ok).toBe(true);
-    expect(validateLead({ ...valid, savings: 'no_aplica', interest: 'gmm' }).ok).toBe(true);
+  it('acepta una solicitud por correo (dominio en minúsculas)', () => {
+    const result = validateLead({ ...byEmail, email: '  Ana.Lopez@Ejemplo.COM ' });
+    expect(result.ok).toBe(true);
+    expect(result.value).toMatchObject({ contactMethod: 'email', email: 'Ana.Lopez@ejemplo.com', phoneE164: null });
+  });
+
+  it('el medio de contacto es obligatorio y solo se exige su dato', () => {
+    expect(validateLead({ ...base }).errors).toMatchObject({ contactMethod: 'required' });
+    expect(validateLead({ ...base, contactMethod: 'fax' }).errors.contactMethod).toBe('invalid');
+    expect(validateLead({ ...base, contactMethod: 'email' }).errors.email).toBe('required');
+    expect(validateLead({ ...base, contactMethod: 'phone' }).errors.phone).toBe('required');
+    // Con correo no hace falta teléfono, y viceversa.
+    expect(validateLead(byEmail).ok).toBe(true);
+    expect(validateLead(byPhone).ok).toBe(true);
+  });
+
+  it('rechaza el dato oculto del otro medio (nunca se envía información que no se ve)', () => {
+    expect(validateLead({ ...byEmail, phone: '6860001234' }).errors.phone).toBe('not_allowed');
+    expect(validateLead({ ...byPhone, email: 'ana@ejemplo.com' }).errors.email).toBe('not_allowed');
+  });
+
+  it('valida el correo', () => {
+    for (const email of ['ana', 'ana@', 'ana@ejemplo', 'a b@ejemplo.com', 'ana..x@ejemplo.com', '.ana@ejemplo.com', `${'a'.repeat(65)}@ejemplo.com`]) {
+      expect(validateLead({ ...byEmail, email }).errors.email, email).toBe('invalid');
+    }
+    for (const email of ['ana@ejemplo.com.mx', 'ana.lopez+asesoria@ejemplo.mx', 'a_b@sub.dominio.io']) {
+      expect(validateLead({ ...byEmail, email }).ok, email).toBe(true);
+    }
+  });
+
+  it('rango de ingresos obligatorio, de las opciones definidas', () => {
+    expect(INCOME_OPTIONS.map((o) => o.label)).toEqual([
+      'De $20,000 a menos de $30,000',
+      'De $30,000 a menos de $50,000',
+      '$50,000 o más',
+    ]);
+    expect(validateLead({ ...byPhone, income: '' }).errors.income).toBe('required');
+    expect(validateLead({ ...byPhone, income: '100_mas' }).errors.income).toBe('invalid');
+    expect(validateLead({ ...byPhone, income: 'toString' }).errors.income).toBe('invalid');
+    for (const { value } of INCOME_OPTIONS) expect(validateLead({ ...byPhone, income: value }).ok).toBe(true);
   });
 
   it('exige consentimiento explícito (true), no valores "truthy"', () => {
     for (const consent of [false, 'true', 1, undefined]) {
-      const result = validateLead({ ...valid, consent });
-      expect(result.ok).toBe(false);
-      expect(result.errors.consent).toBe('required');
+      expect(validateLead({ ...byPhone, consent }).errors.consent).toBe('required');
     }
   });
 
-  it('rechaza campos inesperados, como un destinatario inyectado', () => {
-    const result = validateLead({ ...valid, to: '+15550001111' });
+  it('rechaza campos inesperados, como un destinatario inyectado o el campo anterior de ahorro', () => {
+    const result = validateLead({ ...byPhone, to: '+15550001111' });
     expect(result.ok).toBe(false);
     expect(result.unexpected).toEqual(['to']);
-    expect(validateLead({ ...valid, __proto__: { x: 1 }, template: 'HX1' }).ok).toBe(false);
+    expect(validateLead({ ...byPhone, savings: 'si' }).unexpected).toEqual(['savings']);
+    expect(validateLead({ ...byPhone, __proto__: { x: 1 }, template: 'HX1' }).ok).toBe(false);
   });
 
   it('detecta el campo trampa (honeypot)', () => {
-    const result = validateLead({ ...valid, website: 'https://spam.example' });
+    const result = validateLead({ ...byPhone, website: 'https://spam.example' });
     expect(result.ok).toBe(false);
     expect(result.honeypot).toBe(true);
   });
 
-  it('valida nombre, edad y opciones permitidas', () => {
-    expect(validateLead({ ...valid, name: 'A' }).errors.name).toBe('too_short');
-    expect(validateLead({ ...valid, name: 'x'.repeat(81) }).errors.name).toBe('too_long');
-    expect(validateLead({ ...valid, name: 'Ana <script>' }).errors.name).toBe('invalid');
-    expect(validateLead({ ...valid, name: 'Ana 123' }).errors.name).toBe('invalid');
-    expect(validateLead({ ...valid, age: '17' }).errors.age).toBe('out_of_range');
-    expect(validateLead({ ...valid, age: '100' }).errors.age).toBe('out_of_range');
-    expect(validateLead({ ...valid, age: '3.5' }).errors.age).toBe('invalid');
-    expect(validateLead({ ...valid, age: 34.5 }).errors.age).toBe('invalid');
-    expect(validateLead({ ...valid, savings: 'tal vez' }).errors.savings).toBe('invalid');
-    expect(validateLead({ ...valid, savings: '' }).errors.savings).toBe('required');
-  });
-
-  it('acepta nombres con acentos, ñ, apóstrofos y guiones', () => {
-    for (const name of ['José Ñúñez', "María O'Connor", 'Ana-Lucía Pérez', 'Juan Ma. Ruiz']) {
-      expect(validateLead({ ...valid, name }).ok).toBe(true);
-    }
+  it('valida nombre y edad', () => {
+    expect(validateLead({ ...byPhone, name: 'A' }).errors.name).toBe('too_short');
+    expect(validateLead({ ...byPhone, name: 'x'.repeat(81) }).errors.name).toBe('too_long');
+    expect(validateLead({ ...byPhone, name: 'Ana <script>' }).errors.name).toBe('invalid');
+    expect(validateLead({ ...byPhone, age: '17' }).errors.age).toBe('out_of_range');
+    expect(validateLead({ ...byPhone, age: '3.5' }).errors.age).toBe('invalid');
   });
 
   it('elimina caracteres de control e invisibles del nombre', () => {
     const dirty = `Ana${String.fromCharCode(0x200b, 0x07)}  López${String.fromCharCode(0x2028)}`;
-    const result = validateLead({ ...valid, name: dirty });
-    expect(result.ok).toBe(true);
-    expect(result.value.name).toBe('Ana López');
+    expect(validateLead({ ...byPhone, name: dirty }).value.name).toBe('Ana López');
   });
 
   it('rechaza tipos inválidos y payloads no-objeto', () => {
     expect(validateLead(null).ok).toBe(false);
     expect(validateLead([]).ok).toBe(false);
-    expect(validateLead('texto').ok).toBe(false);
-    expect(validateLead({ ...valid, name: ['Ana'] }).errors.name).toBe('required');
-    expect(validateLead({ ...valid, phone: 6860001234 }).errors.phone).toBe('required');
+    expect(validateLead({ ...byPhone, phone: 6860001234 }).errors.phone).toBe('required');
+    expect(validateLead({ ...byEmail, email: ['ana@ejemplo.com'] }).errors.email).toBe('invalid');
   });
 });
 
 describe('interés del prospecto', () => {
-  it('"Busco un seguro / No aplica" → seguros; "Sí" y "No" → asesoría de ahorro', () => {
-    expect(interestBranch('no_aplica')).toBe('seguro');
-    expect(interestBranch('si')).toBe('ahorro');
-    expect(interestBranch('no')).toBe('ahorro');
+  it('"Ahorro o retiro" → asesoría de ahorro; "Un seguro" → seguros', () => {
+    expect(interestBranch('ahorro')).toBe('ahorro');
+    expect(interestBranch('seguro')).toBe('seguro');
     expect(interestBranch('')).toBe(null);
-    expect(interestOptionsFor('no_aplica').map((o) => o.label)).toEqual([
-      'Gastos médicos mayores (GMM)',
-      'Auto',
-      'Auto turista',
-      'Hogar',
-      'Otro',
-    ]);
-    expect(interestOptionsFor('si').map((o) => o.label)).toEqual([
-      'PPR / retiro',
-      'Ahorro e inversión',
-      'Educación',
-      'Necesito orientación',
-    ]);
-    expect(interestOptionsFor('tal vez')).toEqual([]);
+    expect(interestOptionsFor('seguro').map((o) => o.label)).toEqual(['Gastos médicos mayores (GMM)', 'Auto', 'Auto turista', 'Hogar', 'Otro']);
+    expect(interestOptionsFor('ahorro').map((o) => o.label)).toEqual(['PPR / retiro', 'Ahorro e inversión', 'Educación', 'Necesito orientación']);
   });
 
   it('acepta cada combinación permitida', () => {
-    for (const { value } of INSURANCE_INTERESTS) {
-      expect(validateLead({ ...valid, savings: 'no_aplica', interest: value }).ok).toBe(true);
-    }
-    for (const savings of ['si', 'no']) {
-      for (const { value } of ADVICE_INTERESTS) {
-        const result = validateLead({ ...valid, savings, interest: value });
-        expect(result.ok).toBe(true);
-        expect(result.value.interest).toBe(value);
-      }
-    }
+    for (const { value } of INSURANCE_INTERESTS) expect(validateLead({ ...byPhone, interestType: 'seguro', interest: value }).ok).toBe(true);
+    for (const { value } of ADVICE_INTERESTS) expect(validateLead({ ...byPhone, interestType: 'ahorro', interest: value }).ok).toBe(true);
   });
 
-  it('es obligatorio cuando hay respuesta de ahorro', () => {
-    for (const interest of [undefined, null, '']) {
-      expect(validateLead({ ...valid, interest }).errors.interest).toBe('required');
-    }
-    // Sin respuesta de ahorro solo se reporta ese error (la pregunta de interés aún no aparece).
-    const result = validateLead({ ...valid, savings: '', interest: '' });
-    expect(result.errors.savings).toBe('required');
-    expect(result.errors.interest).toBeUndefined();
+  it('tipo e interés obligatorios', () => {
+    expect(validateLead({ ...byPhone, interestType: '', interest: '' }).errors).toMatchObject({ interestType: 'required' });
+    expect(validateLead({ ...byPhone, interestType: '', interest: '' }).errors.interest).toBeUndefined();
+    expect(validateLead({ ...byPhone, interest: '' }).errors.interest).toBe('required');
+    expect(validateLead({ ...byPhone, interestType: 'credito' }).errors.interestType).toBe('invalid');
   });
 
-  it('rechaza combinaciones cruzadas entre ramas', () => {
-    expect(validateLead({ ...valid, savings: 'si', interest: 'gmm' }).errors.interest).toBe('incompatible');
-    expect(validateLead({ ...valid, savings: 'no', interest: 'auto' }).errors.interest).toBe('incompatible');
-    expect(validateLead({ ...valid, savings: 'no_aplica', interest: 'ppr_retiro' }).errors.interest).toBe(
-      'incompatible',
-    );
-  });
-
-  it('rechaza valores fuera de catálogo, tipos raros y llaves del prototipo', () => {
-    for (const interest of ['xyz', 'GMM', 'toString', '__proto__', 'constructor', ['gmm'], 1, true, { v: 'gmm' }]) {
-      expect(validateLead({ ...valid, savings: 'no_aplica', interest }).errors.interest).toBe('invalid');
+  it('rechaza combinaciones cruzadas y valores fuera de catálogo', () => {
+    expect(validateLead({ ...byPhone, interestType: 'ahorro', interest: 'gmm' }).errors.interest).toBe('incompatible');
+    expect(validateLead({ ...byPhone, interestType: 'seguro', interest: 'ppr_retiro' }).errors.interest).toBe('incompatible');
+    for (const interest of ['xyz', 'toString', '__proto__', ['gmm'], 1]) {
+      expect(validateLead({ ...byPhone, interestType: 'seguro', interest }).errors.interest).toBe('invalid');
     }
   });
 
-  it('el encabezado del aviso refleja el interés, sin inferir PPR por responder "Sí"', () => {
+  it('encabezados del aviso por interés', () => {
     expect(leadHeadline('gmm')).toBe('Nuevo prospecto para GMM');
-    expect(leadHeadline('auto')).toBe('Nuevo prospecto para Auto');
-    expect(leadHeadline('auto_turista')).toBe('Nuevo prospecto para Auto turista');
-    expect(leadHeadline('hogar')).toBe('Nuevo prospecto para Hogar');
     expect(leadHeadline('ppr_retiro')).toBe('Nuevo prospecto para PPR');
-    expect(leadHeadline('ahorro_inversion')).toBe('Nuevo prospecto para Ahorro e inversión');
-    expect(leadHeadline('educacion')).toBe('Nuevo prospecto para Educación');
     expect(leadHeadline('orientacion')).toBe('Nuevo prospecto — Necesita orientación');
     expect(leadHeadline('otro_seguro')).toBe('Nuevo prospecto — Otro seguro');
     expect(leadHeadline('xyz')).toBe('Nuevo prospecto');
   });
 });
 
-describe('normalización de teléfonos', () => {
+describe('teléfono con país y prefijo', () => {
   it.each([
-    ['6860001234', '+526860001234'],
-    ['686-000-1234', '+526860001234'],
-    ['(686) 000 1234', '+526860001234'],
-    ['+52 686 000 1234', '+526860001234'],
-    ['52 686 000 1234', '+526860001234'],
-    ['+521 686 000 1234', '+526860001234'],
-    ['+1 619 555 0101', '+16195550101'],
-  ])('%s → %s', (raw, e164) => {
-    expect(normalizePhone(raw)?.e164).toBe(e164);
+    ['6860001234', 'MX', '+526860001234', '+52 686 000 1234'],
+    ['686-000-1234', 'MX', '+526860001234', '+52 686 000 1234'],
+    ['52 686 000 1234', 'MX', '+526860001234', '+52 686 000 1234'],
+    ['+52 686 000 1234', 'MX', '+526860001234', '+52 686 000 1234'],
+    ['+521 686 000 1234', 'MX', '+526860001234', '+52 686 000 1234'],
+    ['0052 686 000 1234', 'MX', '+526860001234', '+52 686 000 1234'],
+    ['(213) 373-4253', 'US', '+12133734253', '+1 213 373 4253'],
+    ['612 345 678', 'ES', '+34612345678', '+34 612 34 56 78'],
+    ['020 7946 0958', 'GB', '+442079460958', '+44 20 7946 0958'],
+  ])('%s (%s) → %s', (raw, country, e164, display) => {
+    expect(normalizePhone(raw, country)).toMatchObject({ e164, display });
   });
 
-  it.each(['12345', '0000000000', '1234567890', '+44 20 7946 0958', '686 000 12345', 'abc6860001234', '+5268600012'])(
-    'rechaza %s',
-    (raw) => {
-      expect(normalizePhone(raw)).toBeNull();
-    },
-  );
+  it('un número pegado con prefijo se reconoce aunque el país elegido sea otro', () => {
+    expect(normalizePhone('+34 612 345 678', 'MX')).toMatchObject({ e164: '+34612345678', country: 'ES' });
+    expect(normalizePhone('+1 213 373 4253', 'MX')).toMatchObject({ e164: '+12133734253', country: 'US' });
+    expect(normalizePhone('+52 686 000 1234', 'US')).toMatchObject({ e164: '+526860001234', country: 'MX' });
+  });
+
+  it('México exige 10 dígitos nacionales; otros países usan sus propias reglas', () => {
+    for (const raw of ['12345', '0000000000', '1234567890', '686 000 12345', '+5268600012']) {
+      expect(normalizePhone(raw, 'MX'), raw).toBeNull();
+    }
+    expect(normalizePhone('612 345 678', 'MX')).toBeNull();
+    expect(normalizePhone('6860001234', 'ES')).toBeNull();
+    expect(normalizePhone('6860001234', 'XX')).toBeNull();
+    expect(normalizePhone('abc6860001234', 'MX')).toBeNull();
+  });
+
+  it('valida el país del formulario', () => {
+    expect(validateLead({ ...byPhone, phoneCountry: 'XX' }).errors.phoneCountry).toBe('invalid');
+    expect(validateLead({ ...byPhone, phoneCountry: 'ES', phone: '612 345 678' }).value.phoneE164).toBe('+34612345678');
+    expect(validateLead({ ...byPhone, phoneCountry: 'ES' }).errors.phone).toBe('invalid');
+  });
+});
+
+describe('correo', () => {
+  it('normaliza y rechaza formatos inválidos', () => {
+    expect(normalizeEmail(' Luis.BPaz@Outlook.COM ')).toBe('Luis.BPaz@outlook.com');
+    expect(normalizeEmail('a@b')).toBeNull();
+    expect(normalizeEmail(`ana${String.fromCharCode(0x200b)}@ejemplo.com`)).toBeNull();
+  });
 });

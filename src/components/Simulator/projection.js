@@ -62,6 +62,23 @@ export function project({ contribution: rawContribution, years, rate, samples = 
   };
 }
 
+export const WAIT_YEARS = 5;
+
+/**
+ * Costo de esperar: empezar hoy contra empezar `delayYears` después, con la misma aportación,
+ * la misma tasa y la misma fecha final (quien espera aporta durante `delayYears` años menos, sin
+ * aportar durante la espera ni compensar después). Con un plazo igual o menor a la espera no hay
+ * comparación válida y devuelve null.
+ */
+export function waitingCost({ contribution: rawContribution, years, rate }, delayYears = WAIT_YEARS) {
+  if (!(years > delayYears)) return null;
+  const contribution = normalizeContribution(rawContribution);
+  const i = monthlyRate(rate);
+  const today = futureValue(contribution, Math.round(years * 12), i);
+  const later = futureValue(contribution, Math.round((years - delayYears) * 12), i);
+  return { today, later, difference: today - later };
+}
+
 /** Valores al cierre de un año concreto (para la lectura del gráfico). */
 export function valuesAtYear({ contribution: rawContribution, rate }, year) {
   const contribution = normalizeContribution(rawContribution);

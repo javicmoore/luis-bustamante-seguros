@@ -58,8 +58,11 @@ async function createLeadRecord(store, lead, config, receivedAt) {
         receivedAt: receivedAt.toISOString(),
         name: lead.name,
         age: lead.age,
-        phone: lead.phoneE164,
-        savings: lead.savings,
+        contactMethod: lead.contactMethod,
+        email: lead.email ?? '',
+        phone: lead.phoneE164 ?? '',
+        income: lead.income,
+        interestType: lead.interestType,
         interest: lead.interest,
         consentAt: receivedAt.toISOString(),
         consentVersion: CONSENT_VERSION,
@@ -86,7 +89,16 @@ export async function processLead({ lead, idempotencyKey, ipHash, deps }) {
   const demo = Boolean(notifier.demo);
   const fingerprint = hmacHex(
     config.hashSecret,
-    JSON.stringify([lead.name, lead.age, lead.phoneE164, lead.savings, lead.interest]),
+    JSON.stringify([
+      lead.name,
+      lead.age,
+      lead.contactMethod,
+      lead.email,
+      lead.phoneE164,
+      lead.income,
+      lead.interestType,
+      lead.interest,
+    ]),
   );
   const idemKey = `idem:${idempotencyKey}`;
   const saveState = (state) =>
@@ -118,10 +130,12 @@ export async function processLead({ lead, idempotencyKey, ipHash, deps }) {
   let receivedAt = now();
 
   if (!existing) {
-    const phoneHash = hmacHex(config.hashSecret, lead.phoneE164).slice(0, 32);
+    // Límite diario por dato de contacto (correo o teléfono), siempre como seudónimo HMAC.
+    const contact = lead.contactMethod === 'email' ? `email:${lead.email.toLowerCase()}` : `phone:${lead.phoneE164}`;
+    const contactHash = hmacHex(config.hashSecret, contact).slice(0, 32);
     const limit = await checkLeadRate(store, {
       ipHash,
-      phoneHash,
+      contactHash,
       dailyCap: config.dailyCap,
       nowMs: receivedAt.getTime(),
     });

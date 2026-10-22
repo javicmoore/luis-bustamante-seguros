@@ -18,7 +18,7 @@ export function Testimonials() {
       <div className="container">
         <header className="testimonials__head" data-reveal="">
           <p className="eyebrow">{copy.eyebrow}</p>
-          <h2 id="testimonials-title" className="section-title">
+          <h2 id="testimonials-title" className="section-title" data-section-focus="">
             {copy.title}
           </h2>
         </header>
@@ -30,7 +30,9 @@ export function Testimonials() {
                 <figure className="quote__card">
                   <span className="quote__mark" aria-hidden="true" />
                   <blockquote>
-                    <p>{item.quote}</p>
+                    {(Array.isArray(item.quote) ? item.quote : [item.quote]).map((paragraph) => (
+                      <p key={paragraph}>{paragraph}</p>
+                    ))}
                   </blockquote>
                   <figcaption>
                     <span className="quote__name">{item.name}</span>

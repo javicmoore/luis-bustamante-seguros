@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { media, video } from '../../content/media.js';
+import { site } from '../../content/site.js';
 import { videoCopy as copy } from '../../content/copy.js';
 import { IS_DEMO } from '../../lib/siteMode.js';
 import { DevNote } from '../ui/DevNote.jsx';
@@ -82,7 +83,31 @@ export function VideoIntro({ config = video }) {
 
         <figure className="video-intro__figure" data-reveal="" data-reveal-delay="1">
           {hasVideo ? (
-            <VideoPlayer config={config} />
+            <>
+              <VideoPlayer config={config} />
+              {/* Identidad editable junto al video (el póster y el archivo traen su propio texto). */}
+              <figcaption className="video-intro__identity">
+                {site.logo?.isotype ? (
+                  <span className="video-intro__badge" aria-hidden="true">
+                    <picture>
+                      <source type="image/webp" srcSet={site.logo.isotype.src} />
+                      <img
+                        src={site.logo.isotype.fallback}
+                        width={site.logo.isotype.width}
+                        height={site.logo.isotype.height}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </picture>
+                  </span>
+                ) : null}
+                <span className="video-intro__who">
+                  <span className="video-intro__name">{site.name}</span>
+                  <span className="video-intro__role">{site.logo?.tagline}</span>
+                </span>
+              </figcaption>
+            </>
           ) : (
             <>
               <div className="video-intro__screen">

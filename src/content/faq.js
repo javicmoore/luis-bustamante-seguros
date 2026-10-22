@@ -7,7 +7,7 @@ export const faqs = [
     question: '¿Puedo recibir asesoría si no vivo en Mexicali?',
     answer: [
       'Sí. Luis trabaja desde Mexicali, Baja California, y brinda asesoría a personas de todo México.',
-      'La conversación puede hacerse a distancia, por teléfono o WhatsApp.',
+      'La conversación puede hacerse a distancia, por teléfono, WhatsApp o correo electrónico.',
     ],
   },
   {
@@ -29,7 +29,7 @@ export const faqs = [
     id: 'despues-formulario',
     question: '¿Qué pasa después de enviar el formulario?',
     answer: [
-      'Tu solicitud le llega a Luis con los datos que compartiste. Después, él podrá contactarte al teléfono que escribiste para conocer lo que necesitas.',
+      'Tu solicitud le llega a Luis con los datos que compartiste. Después, él podrá contactarte por el medio que elegiste (correo o teléfono) para conocer lo que necesitas.',
       'Enviar el formulario no te compromete a contratar nada, y tus datos se usan solo para atender esta solicitud.',
     ],
   },

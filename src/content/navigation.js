@@ -5,6 +5,8 @@ export const navItems = [
   { id: 'simulador', label: 'Simulador' },
   { id: 'asesoria', label: 'Asesoría' },
   { id: 'sobre-luis', label: 'Sobre Luis' },
+  { id: 'video', label: 'Video' },
+  { id: 'testimonios', label: 'Testimonios' },
   { id: 'faq', label: 'FAQ' },
 ];
 

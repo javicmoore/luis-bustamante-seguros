@@ -12,7 +12,7 @@ export const copyReview = [
     id: 'beneficios-servicios',
     file: 'src/content/services.js',
     status: 'pendiente',
-    note: 'Beneficios (claridad, objetivos, orientación) y descripción de cada familia de servicios.',
+    note: 'Tarjetas de beneficios (respaldo para el retiro, objetivos, condiciones; propuesta del 21 oct 2026) y descripción de cada familia de servicios.',
   },
   {
     id: 'sobre-luis-enfoque',

@@ -1,5 +1,5 @@
 // Límites de uso con ventanas fijas en almacenamiento compartido.
-// Las llaves usan seudónimos HMAC de IP y teléfono (nunca valores en claro) y expiran solas.
+// Las llaves usan seudónimos HMAC de IP y del dato de contacto (nunca valores en claro) y expiran solas.
 
 const TEN_MINUTES = 600;
 const DAY = 86400;
@@ -18,12 +18,12 @@ export async function checkRequestRate(store, { ipHash, nowMs = Date.now(), limi
 }
 
 /** Límites para solicitudes nuevas y válidas (las que pueden generar una notificación). */
-export async function checkLeadRate(store, { ipHash, phoneHash, dailyCap, nowMs = Date.now() }) {
+export async function checkLeadRate(store, { ipHash, contactHash, dailyCap, nowMs = Date.now() }) {
   const day = windowStart(nowMs, DAY);
   const rules = [
     { rule: 'ip_10min', limit: 5, size: TEN_MINUTES, key: `rl:ip:${ipHash}:${windowStart(nowMs, TEN_MINUTES)}` },
     { rule: 'ip_day', limit: 20, size: DAY, key: `rl:ipd:${ipHash}:${day}` },
-    { rule: 'phone_day', limit: 3, size: DAY, key: `rl:ph:${phoneHash}:${day}` },
+    { rule: 'contact_day', limit: 3, size: DAY, key: `rl:ct:${contactHash}:${day}` },
     { rule: 'global_day', limit: dailyCap, size: DAY, key: `rl:all:${day}` },
   ];
   const counts = await store.incrMany(rules.map(({ key, size }) => ({ key, ttl: size })));

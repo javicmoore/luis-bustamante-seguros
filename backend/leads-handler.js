@@ -1,5 +1,6 @@
 // POST /api/leads — controles HTTP antes de procesar la solicitud.
 // Toda petición se trata como no confiable, aunque no venga de la interfaz.
+import '../shared/phone-lib.js';
 import { resolveLeadConfig, isAllowedOrigin } from './config.js';
 import { json, readBodyText, mediaType, clientIp, PayloadTooLargeError } from './http.js';
 import { hmacHex, UUID_PATTERN } from './crypto.js';

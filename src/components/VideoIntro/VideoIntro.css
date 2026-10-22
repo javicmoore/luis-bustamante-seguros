@@ -72,6 +72,45 @@
   background: var(--gold-400);
 }
 
+.video-intro__identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.video-intro__badge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--white);
+}
+
+.video-intro__badge img {
+  width: 32px;
+  height: auto;
+}
+
+.video-intro__who {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.video-intro__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.0625rem;
+}
+
+.video-intro__role {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--gold-300);
+}
+
 .video-intro .dev-note {
   margin-top: 1rem;
 }

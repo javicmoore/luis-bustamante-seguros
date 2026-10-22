@@ -6,7 +6,7 @@ import { PrivacyContent } from './PrivacyContent.jsx';
  * Aviso de privacidad en un <dialog> modal: se abre sin salir del formulario, así los datos
  * escritos se conservan. El navegador gestiona el foco y la tecla Escape.
  */
-export function PrivacyDialog({ open, onClose }) {
+export function PrivacyDialog({ open, onClose, returnFocusRef }) {
   const ref = useRef(null);
   const opener = useRef(null);
 
@@ -14,18 +14,22 @@ export function PrivacyDialog({ open, onClose }) {
     const dialog = ref.current;
     if (!dialog) return;
     if (open && !dialog.open) {
-      opener.current = document.activeElement;
+      // Se vuelve al control que abrió el aviso. Safari no enfoca un botón al hacer clic (el foco
+      // queda en el body o en un contenedor), así que se prefiere el control indicado.
+      opener.current = returnFocusRef?.current || document.activeElement;
       dialog.showModal();
       document.documentElement.classList.add('is-locked');
     } else if (!open && dialog.open) {
       dialog.close();
     }
-  }, [open]);
+  }, [open, returnFocusRef]);
 
   const handleClose = () => {
     document.documentElement.classList.remove('is-locked');
     onClose();
-    opener.current?.focus?.();
+    // Tras el cierre nativo (WebKit restaura su propio foco al cerrar): devolverlo en el siguiente cuadro.
+    const target = opener.current;
+    requestAnimationFrame(() => target?.focus?.());
   };
 
   return (

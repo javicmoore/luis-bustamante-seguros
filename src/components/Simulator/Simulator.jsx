@@ -7,7 +7,7 @@ import { goToSection } from '../../lib/scroll.js';
 import { Icon } from '../ui/Icon.jsx';
 import { RangeField } from './RangeField.jsx';
 import { SimulatorChart } from './SimulatorChart.jsx';
-import { SIM_LIMITS, project } from './projection.js';
+import { SIM_LIMITS, WAIT_YEARS, project, waitingCost } from './projection.js';
 import './Simulator.css';
 
 const parseInteger = (text) => {
@@ -51,6 +51,7 @@ export function Simulator() {
   const interacted = useRef(false);
 
   const result = useMemo(() => project({ contribution, years, rate }), [contribution, years, rate]);
+  const wait = useMemo(() => waitingCost({ contribution, years, rate }), [contribution, years, rate]);
 
   const changeWith = (setter, control) => (value) => {
     setter(value);
@@ -75,7 +76,8 @@ export function Simulator() {
   const chartLabels = {
     contributed: copy.contributedLabel,
     scenario: copy.scenarioLabel,
-    ariaSummary: `Gráfico: en ${years} ${years === 1 ? 'año' : 'años'}, ${copy.contributedLabel.toLowerCase()} de ${formatMoney(result.contributed)} y ${copy.scenarioLabel.toLowerCase()} de ${formatMoney(result.scenario)} con una tasa anual de ${formatRate(rate)}.`,
+    ariaSummary: `Gráfica de barras: en ${years} ${years === 1 ? 'año' : 'años'}, ${copy.contributedLabel.toLowerCase()} de ${formatMoney(result.contributed)} y ${copy.scenarioLabel.toLowerCase()} de ${formatMoney(result.scenario)} con una tasa anual de ${formatRate(rate)}.`,
+    tableCaption: 'Valores por año de la simulación',
   };
 
   return (
@@ -135,7 +137,6 @@ export function Simulator() {
               help={copy.rateHelp}
               inputLabel="Tasa anual ilustrativa en porcentaje, valor exacto"
             />
-            <p className="sim__method">{copy.method}</p>
           </div>
 
           <div className="sim__results on-dark">
@@ -158,14 +159,43 @@ export function Simulator() {
               )}
             </p>
 
-            <SimulatorChart projection={result} inputs={{ contribution, rate }} labels={chartLabels} />
+            <SimulatorChart inputs={{ contribution, rate }} years={years} labels={chartLabels} />
 
-            <p className="sim__disclaimer">
-              <Icon name="alert" />
-              <span>
-                {copy.rateAssumption} {copy.disclaimer}
-              </span>
-            </p>
+            <div className="sim-wait">
+              <p className="sim-wait__hook">{copy.waitHook}</p>
+              {wait ? (
+                <>
+                  <p className="sim-wait__result">
+                    {copy.waitLead} <strong>{formatMoney(wait.difference)}</strong> {copy.waitTail}
+                  </p>
+                  <dl className="sim-wait__compare">
+                    <div>
+                      <dt>{copy.waitToday}</dt>
+                      <dd>{formatMoney(wait.today)}</dd>
+                    </div>
+                    <div>
+                      <dt>{copy.waitLater}</dt>
+                      <dd>{formatMoney(wait.later)}</dd>
+                    </div>
+                  </dl>
+                </>
+              ) : (
+                <p className="sim-wait__result sim-wait__result--note">{copy.waitTooShort}</p>
+              )}
+              <p className="sim-wait__fine">
+                <Icon name="alert" />
+                {copy.waitFine}
+              </p>
+              <details className="sim-assumptions">
+                <summary>{copy.assumptionsLabel}</summary>
+                <ul>
+                  <li>{copy.method}</li>
+                  <li>{copy.waitAssumption.replace(/5 años/g, `${WAIT_YEARS} años`)}</li>
+                  <li>{copy.rateAssumption}</li>
+                  <li>{copy.disclaimer}</li>
+                </ul>
+              </details>
+            </div>
             <a
               className="btn btn--gold sim__cta"
               href={`#${FORM_ANCHOR}`}

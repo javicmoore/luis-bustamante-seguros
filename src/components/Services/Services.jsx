@@ -49,31 +49,31 @@ export function Services() {
   const total = serviceFamilies.length;
 
   return (
-    <section id="servicios" className="section services" aria-labelledby="services-title">
+    <section id="servicios" className="section services on-dark" aria-labelledby="services-title">
       <div className="container">
-        <header className="services__head">
-          <div data-reveal="">
-            <p className="eyebrow">{copy.eyebrow}</p>
-            <h2 id="services-title" className="section-title">
-              {copy.title}
-            </h2>
-          </div>
-          <p className="lead" data-reveal="" data-reveal-delay="1">
-            {copy.intro}
-          </p>
+        <header className="services__head" data-reveal="">
+          <p className="eyebrow">{copy.eyebrow}</p>
+          <h2 id="services-title" className="section-title">
+            {copy.title}
+          </h2>
         </header>
 
-        <ol className="benefits" role="list">
+        <ul className="benefits" role="list">
           {benefits.map((benefit, index) => (
             <li key={benefit.id} className="benefit" data-reveal="" data-reveal-delay={String(index + 1)}>
-              <span className="benefit__index" aria-hidden="true">
-                {String(index + 1).padStart(2, '0')}
+              <span className="benefit__icon" aria-hidden="true">
+                <Icon name={benefit.icon} />
               </span>
               <h3 className="benefit__title">{benefit.title}</h3>
               <p className="benefit__text">{benefit.text}</p>
             </li>
           ))}
-        </ol>
+        </ul>
+
+        {/* Tarjetas de servicios (se conservan): su introducción es la de la sección anterior. */}
+        <p className="services__intro" data-reveal="">
+          {copy.intro}
+        </p>
       </div>
 
       <div className="services__rail-wrap">
@@ -140,7 +140,7 @@ export function Services() {
         <div className="services__cta" data-reveal="">
         <p>¿No sabes por dónde empezar? Cuéntale a Luis qué te gustaría proteger o lograr.</p>
         <a
-          className="btn btn--navy"
+          className="btn btn--gold"
           href={`#${FORM_ANCHOR}`}
           onClick={(event) => {
             event.preventDefault();
