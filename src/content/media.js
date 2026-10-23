@@ -1,6 +1,7 @@
 // Fotografías y video reales de Luis.
 //
-// Originales entregados en assets-originales/ (luis-hero.png: traje azul; luis.png: camisa azul).
+// Originales entregados en assets-originales/ (luis-hero.png: traje azul, hero; luis-sentado.jpeg: traje
+// gris, "Sobre Luis"; luis.png: camisa azul, ya no se usa).
 // Las copias web de public/media/ se generan con: npm run luis:assets
 // (solo redimensionado y compresión; sin retoque ni versiones generativas).
 // NUNCA usar fotos de terceros ni caras generadas.
@@ -58,47 +59,40 @@ export const media = {
     fallback: '/media/luis-hero-720.jpg',
     focus: 'upper'
   },
+  // Foto de "Sobre Luis" (23 oct 2026): original assets-originales/luis-sentado.jpeg, sin cambios.
   aboutPortrait: {
-    alt: 'Luis Bustamante con camisa azul, sonriendo',
-    width: 1088,
-    height: 1446,
+    alt: 'Luis Bustamante de traje gris y camisa blanca, sentado y sonriendo',
+    width: 956,
+    height: 1280,
     avif: [
       {
-        src: '/media/luis-sobre-480.avif',
+        src: '/media/luis-sobre-gris-480.avif',
         w: 480
       },
       {
-        src: '/media/luis-sobre-720.avif',
+        src: '/media/luis-sobre-gris-720.avif',
         w: 720
       },
       {
-        src: '/media/luis-sobre-960.avif',
-        w: 960
-      },
-      {
-        src: '/media/luis-sobre-1088.avif',
-        w: 1088
+        src: '/media/luis-sobre-gris-956.avif',
+        w: 956
       }
     ],
     webp: [
       {
-        src: '/media/luis-sobre-480.webp',
+        src: '/media/luis-sobre-gris-480.webp',
         w: 480
       },
       {
-        src: '/media/luis-sobre-720.webp',
+        src: '/media/luis-sobre-gris-720.webp',
         w: 720
       },
       {
-        src: '/media/luis-sobre-960.webp',
-        w: 960
-      },
-      {
-        src: '/media/luis-sobre-1088.webp',
-        w: 1088
+        src: '/media/luis-sobre-gris-956.webp',
+        w: 956
       }
     ],
-    fallback: '/media/luis-sobre-720.jpg',
+    fallback: '/media/luis-sobre-gris-720.jpg',
     focus: 'top'
   },
   // Recorte cuadrado del rostro (foto de traje) para los avatares pequeños. Decorativo: el

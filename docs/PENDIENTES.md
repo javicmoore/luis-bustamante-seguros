@@ -10,7 +10,6 @@ Vercel se detiene a propósito (las vistas previas sí se despliegan). Todo el c
 | --- | --- | --- |
 | Subtítulos del video (recomendado) | Archivo `.vtt` en español del video de presentación | `public/media/` y `video.captions` en `src/content/media.js`. El video ya está integrado; sin subtítulos, quien no puede escucharlo no accede a su contenido |
 | Constancia de testimonios | Autorización por escrito de Karla G., Sergio C. y Alberto G. para publicar su testimonio con ese nombre y contexto | Los tres testimonios ya se publican (entregados por Javier el 19 oct 2026, en `src/content/testimonials.js`). Marcar `testimonios-autorizacion` en `src/content/launch.js` solo con la constancia |
-| Foto de "Sobre Luis" con traje gris | La nueva foto (retrato limpio, sin textos publicitarios) | No se recibió el 21 oct 2026: se conserva la de camisa azul. Al recibirla: original en `assets-originales/`, copias responsive con `npm run luis:assets` (ajustar la fuente en `scripts/prepare-luis-assets.mjs`) y `media.aboutPortrait` |
 | Nueva exportación del video y su miniatura | Versión con el cargo "Asesor financiero y agente de seguros" | El video lleva el logo con "Agente de seguros" como marca de agua durante toda la reproducción y en la pantalla final; la miniatura también. La identidad editable junto al video ya usa el cargo nuevo. No se tapa el contenido del video |
 | Logo con el cargo nuevo (si se desea) | Versión del logotipo con "Asesor financiero y agente de seguros" | El logo original dice "Agente de seguros"; se usa tal cual en el footer, el favicon y la imagen social. El header ya muestra el cargo nuevo en texto |
 | Logo en vector (opcional) | SVG del logotipo, si existe | Hoy se usa el PNG original sin fondo blanco; un SVG daría bordes más nítidos en pantallas grandes |
@@ -19,6 +18,8 @@ Vercel se detiene a propósito (las vistas previas sí se despliegan). Todo el c
 Integrados el 11 de octubre de 2026 desde `assets-originales/` (originales intactos): retrato del hero (traje
 azul), retrato de "Sobre Luis" (camisa azul), logo (header, footer, favicon e imagen social). Solo recorte,
 escala y compresión; sin retoque ni versiones generativas.
+
+El 23 de octubre de 2026 la foto de "Sobre Luis" pasó a la de traje gris (`assets-originales/luis-sentado.jpeg`, original intacto; copias `luis-sobre-gris-*`).
 
 Nunca usar fotos de terceros ni caras generadas en lugar de Luis.
 

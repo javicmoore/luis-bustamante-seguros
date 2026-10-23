@@ -78,11 +78,12 @@ const hero = await exportPortrait(
   'Luis Bustamante, agente de seguros, de traje azul y camisa blanca, sonriendo',
   'upper',
 );
+// "Sobre Luis": foto de traje gris (956 px de ancho; no se amplía).
 const about = await exportPortrait(
-  'luis.png',
-  'luis-sobre',
-  [480, 720, 960, 1088],
-  'Luis Bustamante con camisa azul, sonriendo',
+  'luis-sentado.jpeg',
+  'luis-sobre-gris',
+  [480, 720, 956],
+  'Luis Bustamante de traje gris y camisa blanca, sentado y sonriendo',
   'top',
 );
 
