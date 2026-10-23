@@ -145,9 +145,10 @@ export const media = {
 // El reproductor usa controles nativos, playsInline y preload="none", sin reproducción
 // automática; archivo y póster se piden solo cuando el visitante se acerca a la sección.
 export const video = {
-  // Original: assets-originales/luis/Luis_Bustamante_video_landing_web_v2.mp4 (sin cambios).
-  // Ya venía listo para web (H.264 High 3.1 + AAC estéreo, 1280x720, 30 fps, 2:50, faststart,
-  // 25.8 MB), así que la copia publicada es idéntica: recomprimir solo restaría calidad.
+  // Original (23 oct 2026): assets-originales/luis/Luis_Bustamante_video_landing_FINAL_con_musica_v4.mp4
+  // (sin cambios). Ya venía listo para web (H.264 High 3.1 + AAC estéreo, 1280x720, 30 fps, 2:58,
+  // faststart, 26.0 MB), así que la copia publicada es idéntica: recomprimir solo restaría calidad.
+  // La versión anterior (…_web_v2.mp4) se conserva en la misma carpeta.
   src: '/media/luis-presentacion.mp4',
   type: 'video/mp4',
   width: 1280,

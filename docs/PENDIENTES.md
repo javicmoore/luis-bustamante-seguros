@@ -24,8 +24,8 @@ Nunca usar fotos de terceros ni caras generadas en lugar de Luis.
 
 ### Video de presentación (integrado el 13 de octubre de 2026)
 
-- Original sin cambios: `assets-originales/luis/Luis_Bustamante_video_landing_web_v2.mp4` (H.264 High 3.1 + AAC
-  estéreo, 1280×720, 30 fps, 2:50, faststart, 25.8 MB). Ya venía listo para web, así que la copia publicada
+- Original sin cambios (23 oct 2026, con música): `assets-originales/luis/Luis_Bustamante_video_landing_FINAL_con_musica_v4.mp4`
+  (H.264 High 3.1 + AAC estéreo, 1280×720, 30 fps, 2:58, faststart, 26.0 MB). La versión anterior (`…_web_v2.mp4`) se conserva. Ya venía listo para web, así que la copia publicada
   (`public/media/luis-presentacion.mp4`) es idéntica: recomprimir solo restaría calidad de imagen y voz.
 - Miniatura original: `assets-originales/luis/Luis_Bustamante_video_landing_web_v2-miniatura.png` (1672×941).
   Póster web completo, sin recortes: `public/media/luis-presentacion-poster.jpg` (1600×900, 127 KB), con

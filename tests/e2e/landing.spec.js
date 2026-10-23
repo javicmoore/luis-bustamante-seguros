@@ -247,9 +247,9 @@ test.describe('"Conoce a Luis": video de presentación', () => {
     if (test.info().project.use.browserName === 'webkit') {
       // WebKit para Windows (Playwright) reporta el tamaño de la caja en lugar del archivo y no cuenta
       // el audio decodificado: aquí solo se comprueba que avanza, su duración y que no está silenciado.
-      expect({ duration: playing.duration, muted: playing.muted }).toEqual({ duration: 170, muted: false });
+      expect({ duration: playing.duration, muted: playing.muted }).toEqual({ duration: 178, muted: false });
     } else {
-      expect(playing).toEqual({ size: '1280x720', duration: 170, audio: true, muted: false });
+      expect(playing).toEqual({ size: '1280x720', duration: 178, audio: true, muted: false });
     }
     await video.evaluate((v) => v.pause());
     await expect.poll(() => video.evaluate((v) => v.paused)).toBe(true);
