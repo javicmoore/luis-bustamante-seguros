@@ -9,8 +9,6 @@ export const validLead = () => ({
   phoneCountry: 'MX',
   phone: '686 000 1234',
   income: '30_50',
-  interestType: 'ahorro',
-  interest: 'ppr_retiro',
   consent: true,
   website: '',
 });

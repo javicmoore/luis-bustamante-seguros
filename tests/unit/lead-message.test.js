@@ -14,27 +14,19 @@ const notice = (overrides) => {
 };
 const byEmail = { contactMethod: 'email', email: 'ana@ejemplo.com', phone: undefined, phoneCountry: undefined };
 
-describe('aviso de WhatsApp para Luis (plantilla v3)', () => {
-  it.each([
-    ['seguro', 'gmm', 'Nuevo prospecto para GMM', 'Gastos médicos mayores (GMM)'],
-    ['seguro', 'auto', 'Nuevo prospecto para Auto', 'Auto'],
-    ['seguro', 'auto_turista', 'Nuevo prospecto para Auto turista', 'Auto turista'],
-    ['seguro', 'hogar', 'Nuevo prospecto para Hogar', 'Hogar'],
-    ['seguro', 'otro_seguro', 'Nuevo prospecto — Otro seguro', 'Otro seguro'],
-    ['ahorro', 'ppr_retiro', 'Nuevo prospecto para PPR', 'PPR / retiro'],
-    ['ahorro', 'ahorro_inversion', 'Nuevo prospecto para Ahorro e inversión', 'Ahorro e inversión'],
-    ['ahorro', 'educacion', 'Nuevo prospecto para Educación', 'Educación'],
-    ['ahorro', 'orientacion', 'Nuevo prospecto — Necesita orientación', 'Necesita orientación'],
-  ])('%s + %s → "%s"', (interestType, interest, headline, interestText) => {
-    const { vars, text } = notice({ interestType, interest });
-    expect(text.split('\n')[0]).toBe(headline);
-    expect(text).toContain(`Interés: ${interestText}`);
-    expect(vars[7]).toBe(interestText);
+describe('aviso de WhatsApp para Luis (plantilla v4)', () => {
+  it('encabezado general "Nuevo prospecto", sin producto ni interés', () => {
+    for (const overrides of [{}, byEmail, { income: '50_mas' }]) {
+      const { vars, text } = notice(overrides);
+      expect(text.split('\n')[0]).toBe('Nuevo prospecto');
+      expect(text).not.toMatch(/Interés|seguro|ahorro|retiro|GMM|PPR/i);
+      expect(Object.values(vars).join(' ')).not.toMatch(/seguro|ahorro|retiro|GMM|PPR/i);
+    }
   });
 
   it('por teléfono: medio preferido y número completo en formato internacional', () => {
     const { vars, text } = notice({ phoneCountry: 'US', phone: '(213) 373-4253' });
-    expect(Object.keys(vars)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9']);
+    expect(Object.keys(vars)).toEqual(['1', '2', '3', '4', '5', '6', '7']);
     expect(text).toContain('Contacto preferido: Teléfono (llamada o WhatsApp)');
     expect(text).toContain('Dato de contacto: +1 213 373 4253');
     expect(notice({}).text).toContain('Dato de contacto: +52 686 000 1234');
@@ -42,14 +34,14 @@ describe('aviso de WhatsApp para Luis (plantilla v3)', () => {
 
   it('por correo: indica el correo y no incluye teléfono', () => {
     const { vars, text } = notice(byEmail);
-    expect(vars[5]).toBe('Correo electrónico');
-    expect(vars[6]).toBe('ana@ejemplo.com');
+    expect(vars[4]).toBe('Correo electrónico');
+    expect(vars[5]).toBe('ana@ejemplo.com');
     expect(text).toContain('Contacto preferido: Correo electrónico');
     expect(text).not.toMatch(/\+52/);
   });
 
-  it('incluye nombre, edad, interés, rango de ingresos, folio y hora', () => {
-    const { text } = notice({ income: '50_mas', interestType: 'seguro', interest: 'gmm' });
+  it('incluye nombre, edad, rango de ingresos, folio y hora', () => {
+    const { text } = notice({ income: '50_mas' });
     expect(text).toContain('Folio: LB-TEST01');
     expect(text).toContain('Nombre: Ana López');
     expect(text).toContain('Edad: 34 años');
@@ -64,6 +56,6 @@ describe('aviso de WhatsApp para Luis (plantilla v3)', () => {
       expect(value).not.toBe('');
       expect(value).not.toMatch(/[\r\n\t]| {5,}/);
     }
-    expect(vars[3]).toBe('Ana María López');
+    expect(vars[2]).toBe('Ana María López');
   });
 });

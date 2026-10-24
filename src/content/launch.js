@@ -11,7 +11,7 @@ export const launchChecklist = [
     id: 'plantilla-whatsapp-interes',
     done: false,
     label:
-      'Plantilla de WhatsApp de 9 variables (versión 3: medio de contacto, correo o teléfono, ingresos e interés) aprobada en Twilio/Meta y su ContentSid cargado en TWILIO_CONTENT_SID (ver docs/WHATSAPP-TWILIO.md).',
+      'Plantilla de WhatsApp de 7 variables (versión 4: encabezado general, medio de contacto, correo o teléfono e ingresos) aprobada en Twilio/Meta y su ContentSid cargado en TWILIO_CONTENT_SID (ver docs/WHATSAPP-TWILIO.md).',
   },
   {
     id: 'whatsapp-prueba-autorizada',

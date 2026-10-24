@@ -732,9 +732,9 @@ test.describe('movimiento reducido', () => {
     expect(opacities).toEqual(['1', '1', '1']);
   });
 
-  test('la pregunta de interés del formulario aparece sin animación', async ({ page }) => {
+  test('el campo del medio de contacto aparece sin animación', async ({ page }) => {
     await open(page, '/#asesoria');
-    await page.locator('label.choice__option').filter({ hasText: /^Un seguro$/ }).click();
+    await page.locator('label.choice__option').filter({ hasText: /^Teléfono$/ }).click();
     const fieldset = page.locator('.interest__fieldset');
     await expect(fieldset).toBeVisible();
     const motion = await fieldset.evaluate((el) => ({

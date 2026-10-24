@@ -39,57 +39,6 @@ export const INCOME_OPTIONS = Object.freeze([
 ]);
 export const INCOME_BY_VALUE = Object.freeze(Object.fromEntries(INCOME_OPTIONS.map((o) => [o.value, o])));
 
-// "¿Qué te interesa?": clasifica al prospecto y decide la pregunta de detalle.
-export const INTEREST_TYPES = Object.freeze([
-  { value: 'ahorro', label: 'Ahorro o retiro' },
-  { value: 'seguro', label: 'Un seguro' },
-]);
-
-// Interés detallado: una sola elección, cuyas opciones dependen del tipo de interés.
-// `headline` completa "Nuevo prospecto …" en el aviso a Luis; `label` es el texto del formulario y
-// `notice` el que se muestra en el aviso.
-export const INSURANCE_INTERESTS = Object.freeze([
-  { value: 'gmm', label: 'Gastos médicos mayores (GMM)', notice: 'Gastos médicos mayores (GMM)', headline: 'para GMM' },
-  { value: 'auto', label: 'Auto', notice: 'Auto', headline: 'para Auto' },
-  { value: 'auto_turista', label: 'Auto turista', notice: 'Auto turista', headline: 'para Auto turista' },
-  { value: 'hogar', label: 'Hogar', notice: 'Hogar', headline: 'para Hogar' },
-  { value: 'otro_seguro', label: 'Otro', notice: 'Otro seguro', headline: '— Otro seguro' },
-]);
-
-export const ADVICE_INTERESTS = Object.freeze([
-  { value: 'ppr_retiro', label: 'PPR / retiro', notice: 'PPR / retiro', headline: 'para PPR' },
-  { value: 'ahorro_inversion', label: 'Ahorro e inversión', notice: 'Ahorro e inversión', headline: 'para Ahorro e inversión' },
-  { value: 'educacion', label: 'Educación', notice: 'Educación', headline: 'para Educación' },
-  { value: 'orientacion', label: 'Necesito orientación', notice: 'Necesita orientación', headline: '— Necesita orientación' },
-]);
-
-export const INTEREST_BY_VALUE = Object.freeze(
-  Object.fromEntries([...INSURANCE_INTERESTS, ...ADVICE_INTERESTS].map((o) => [o.value, o])),
-);
-
-/** Rama del interés detallado según el tipo elegido: 'seguro', 'ahorro' o null. */
-export function interestBranch(interestType) {
-  return interestType === 'seguro' || interestType === 'ahorro' ? interestType : null;
-}
-
-export function interestOptionsFor(interestType) {
-  const branch = interestBranch(interestType);
-  if (branch === 'seguro') return INSURANCE_INTERESTS;
-  if (branch === 'ahorro') return ADVICE_INTERESTS;
-  return [];
-}
-
-export const INTEREST_QUESTIONS = Object.freeze({
-  seguro: '¿Qué seguro te interesa?',
-  ahorro: '¿Sobre qué te gustaría recibir asesoría?',
-});
-
-/** Encabezado del aviso a Luis, p. ej. "Nuevo prospecto para GMM". */
-export function leadHeadline(interest) {
-  const option = INTEREST_BY_VALUE[interest];
-  return option ? `Nuevo prospecto ${option.headline}` : 'Nuevo prospecto';
-}
-
 // Campos aceptados. Cualquier otro (p. ej. un destinatario) invalida la solicitud.
 // `website` es un campo trampa (honeypot) que una persona no ve ni llena.
 export const ALLOWED_FIELDS = Object.freeze([
@@ -100,8 +49,6 @@ export const ALLOWED_FIELDS = Object.freeze([
   'phoneCountry',
   'phone',
   'income',
-  'interestType',
-  'interest',
   'consent',
   'website',
 ]);
@@ -259,19 +206,6 @@ export function validateLead(input, { strict = true } = {}) {
   if (blank(input.income)) errors.income = 'required';
   else if (typeof input.income !== 'string' || !has(INCOME_BY_VALUE, input.income)) errors.income = 'invalid';
 
-  // Tipo de interés y detalle compatible con ese tipo.
-  const type = input.interestType;
-  if (blank(type)) errors.interestType = 'required';
-  else if (typeof type !== 'string' || !interestBranch(type)) errors.interestType = 'invalid';
-  const options = errors.interestType ? [] : interestOptionsFor(type);
-  if (blank(input.interest)) {
-    if (!errors.interestType) errors.interest = 'required';
-  } else if (typeof input.interest !== 'string' || !has(INTEREST_BY_VALUE, input.interest)) {
-    errors.interest = 'invalid';
-  } else if (!errors.interestType && !options.some((o) => o.value === input.interest)) {
-    errors.interest = 'incompatible';
-  }
-
   if (input.consent !== true) errors.consent = 'required';
 
   if (Object.keys(errors).length) return { ok: false, errors };
@@ -287,8 +221,6 @@ export function validateLead(input, { strict = true } = {}) {
       phoneDisplay: phone?.display ?? null,
       phoneCountry: phone?.country ?? null,
       income: input.income,
-      interestType: type,
-      interest: input.interest,
       consent: true,
     },
   };

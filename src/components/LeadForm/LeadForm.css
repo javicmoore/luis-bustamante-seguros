@@ -651,10 +651,6 @@
   .choice__options--stack {
     grid-template-columns: 1fr;
   }
-
-  .choice__options--interest {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (min-width: 960px) {

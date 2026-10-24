@@ -62,8 +62,6 @@ async function createLeadRecord(store, lead, config, receivedAt) {
         email: lead.email ?? '',
         phone: lead.phoneE164 ?? '',
         income: lead.income,
-        interestType: lead.interestType,
-        interest: lead.interest,
         consentAt: receivedAt.toISOString(),
         consentVersion: CONSENT_VERSION,
         notify: 'notifying',
@@ -96,8 +94,6 @@ export async function processLead({ lead, idempotencyKey, ipHash, deps }) {
       lead.email,
       lead.phoneE164,
       lead.income,
-      lead.interestType,
-      lead.interest,
     ]),
   );
   const idemKey = `idem:${idempotencyKey}`;

@@ -30,8 +30,6 @@ test.describe('despliegue de demostración', () => {
     await page.locator('label.choice__option').filter({ hasText: /^Teléfono$/ }).click();
     await page.locator('#lead-phone').fill('686 000 0042');
     await page.locator('label.choice__option').filter({ hasText: /^\$50,000 o más$/ }).click();
-    await page.locator('label.choice__option').filter({ hasText: /^Ahorro o retiro$/ }).click();
-    await page.locator('label.choice__option').filter({ hasText: /^Necesito orientación$/ }).click();
     await page.locator('label.consent__label').click();
     await page.getByRole('button', { name: 'Solicitar mi asesoría' }).click();
     const result = page.locator('.lead-result');

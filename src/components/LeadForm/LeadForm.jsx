@@ -6,11 +6,7 @@ import {
   CONTACT_METHODS,
   DEFAULT_PHONE_COUNTRY,
   INCOME_OPTIONS,
-  INTEREST_QUESTIONS,
-  INTEREST_TYPES,
   LEAD_LIMITS,
-  interestBranch,
-  interestOptionsFor,
   hasPhoneLibrary,
   normalizeName,
   normalizePhone,
@@ -25,7 +21,7 @@ import { PrivacyDialog } from '../Privacy/PrivacyDialog.jsx';
 import { createIdempotencyTracker, submitLead, wait } from './submitLead.js';
 import './LeadForm.css';
 
-const FIELDS = ['name', 'age', 'contactMethod', 'email', 'phoneCountry', 'phone', 'income', 'interestType', 'interest', 'consent'];
+const FIELDS = ['name', 'age', 'contactMethod', 'email', 'phoneCountry', 'phone', 'income', 'consent'];
 
 const MESSAGES = {
   name: {
@@ -61,23 +57,9 @@ const MESSAGES = {
     required: 'Elige el rango de tus ingresos mensuales.',
     invalid: 'Elige una de las opciones.',
   },
-  interestType: {
-    required: 'Elige qué te interesa.',
-    invalid: 'Elige una de las opciones.',
-  },
-  interest: {
-    // El texto de "required" depende de la rama (ver interestMessage).
-    invalid: 'Elige una de las opciones.',
-    incompatible: 'Elige una de las opciones de esta pregunta.',
-  },
   consent: {
     required: 'Para que Luis pueda contactarte, marca la autorización.',
   },
-};
-
-const INTEREST_REQUIRED = {
-  seguro: 'Elige qué seguro te interesa.',
-  ahorro: 'Elige sobre qué te gustaría recibir asesoría.',
 };
 
 const FIELD_LABELS = {
@@ -88,8 +70,6 @@ const FIELD_LABELS = {
   phoneCountry: copy.phoneCountryLabel,
   phone: copy.phoneLabel,
   income: 'Ingresos mensuales',
-  interestType: 'Qué te interesa',
-  interest: 'Interés',
   consent: 'Autorización de contacto',
 };
 
@@ -132,8 +112,6 @@ const INITIAL = {
   phoneCountry: DEFAULT_PHONE_COUNTRY,
   phone: '',
   income: '',
-  interestType: '',
-  interest: '',
   consent: false,
   website: '',
 };
@@ -145,8 +123,6 @@ function buildPayload(values) {
     age: values.age,
     contactMethod: values.contactMethod,
     income: values.income,
-    interestType: values.interestType,
-    interest: values.interest,
     consent: values.consent,
     website: values.website,
   };
@@ -250,7 +226,6 @@ export function LeadForm() {
   const messageFor = (field) => {
     const code = errorFor(field);
     if (!code) return null;
-    if (field === 'interest' && code === 'required') return INTEREST_REQUIRED[interestBranch(values.interestType)] || MESSAGES.interest.invalid;
     if (field === 'phone' && code === 'invalid' && values.phoneCountry === 'MX') return 'Escribe un número válido de 10 dígitos.';
     return MESSAGES[field][code] || MESSAGES[field].invalid || MESSAGES[field].required;
   };
@@ -259,9 +234,6 @@ export function LeadForm() {
     if (submitting) return;
     setValues((prev) => {
       const next = { ...prev, [field]: value };
-      // Cambiar de rama (ahorro o seguro) limpia el interés detallado, para no enviar una
-      // selección oculta o contradictoria.
-      if (field === 'interestType' && interestBranch(prev.interestType) !== interestBranch(value)) next.interest = '';
       // Cambiar de medio de contacto limpia el dato del medio anterior.
       if (field === 'contactMethod' && prev.contactMethod !== value) {
         next.email = '';
@@ -275,21 +247,17 @@ export function LeadForm() {
     });
     // Un cambio también descarta los errores del servidor que dependían del valor anterior.
     const stale =
-      field === 'interestType'
-        ? [field, 'interest']
-        : field === 'contactMethod'
-          ? [field, 'email', 'phone', 'phoneCountry']
-          : field === 'phoneCountry'
-            ? [field, 'phone']
-            : [field];
+      field === 'contactMethod'
+        ? [field, 'email', 'phone', 'phoneCountry']
+        : field === 'phoneCountry'
+          ? [field, 'phone']
+          : [field];
     if (stale.some((key) => serverErrors[key])) {
       setServerErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => !stale.includes(key))));
     }
     if (status.state === 'error') setStatus({ state: 'idle' });
   };
 
-  const branch = interestBranch(values.interestType);
-  const interestOptions = interestOptionsFor(values.interestType);
   const method = values.contactMethod;
   const blur = (field) => setTouched((prev) => ({ ...prev, [field]: true }));
 
@@ -327,8 +295,6 @@ export function LeadForm() {
       values.contactMethod === 'phone' ? values.phoneCountry : '',
       values.phone.replace(/\D/g, ''),
       values.income,
-      values.interestType,
-      values.interest,
       values.consent,
     ]);
     if (!keyFor.current) keyFor.current = createIdempotencyTracker();
@@ -748,77 +714,9 @@ export function LeadForm() {
                 ) : null}
               </fieldset>
 
-              <fieldset
-                className={`field choice${errorFor('interestType') ? ' has-error' : ''}`}
-                aria-describedby={describedBy('interestType')}
-              >
-                <legend className="field__label">{copy.interestTypeLegend}</legend>
-                <div className="choice__options choice__options--pair">
-                  {INTEREST_TYPES.map((option, index) => (
-                    <label key={option.value} className="choice__option">
-                      <input
-                        id={index === 0 ? 'lead-interestType' : undefined}
-                        type="radio"
-                        name="interestType"
-                        value={option.value}
-                        checked={values.interestType === option.value}
-                        onChange={() => update('interestType', option.value)}
-                        onBlur={() => blur('interestType')}
-                      />
-                      <span className="choice__mark" aria-hidden="true" />
-                      <span className="choice__text">{option.label}</span>
-                    </label>
-                  ))}
-                </div>
-                {messageFor('interestType') ? (
-                  <p id="lead-interestType-error" className="field__error">
-                    <Icon name="alert" />
-                    {messageFor('interestType')}
-                  </p>
-                ) : null}
-              </fieldset>
-
-              {/* Pregunta de detalle: aparece según el tipo de interés, sin mover el foco. */}
-              <div className={`interest${branch ? ' is-open' : ''}`}>
-                <div className="interest__inner">
-                  {branch ? (
-                    <fieldset
-                      key={branch}
-                      className={`field choice interest__fieldset${errorFor('interest') ? ' has-error' : ''}`}
-                      aria-describedby={describedBy('interest')}
-                    >
-                      <legend className="field__label">{INTEREST_QUESTIONS[branch]}</legend>
-                      <div className="choice__options choice__options--interest">
-                        {interestOptions.map((option, index) => (
-                    <label key={option.value} className="choice__option">
-                      <input
-                        id={index === 0 ? 'lead-interest' : undefined}
-                        type="radio"
-                        name="interest"
-                        value={option.value}
-                        checked={values.interest === option.value}
-                        onChange={() => update('interest', option.value)}
-                        onBlur={() => blur('interest')}
-                      />
-                      <span className="choice__mark" aria-hidden="true" />
-                      <span className="choice__text">{option.label}</span>
-                    </label>
-                  ))}
-                      </div>
-                      {messageFor('interest') ? (
-                  <p id="lead-interest-error" className="field__error">
-                    <Icon name="alert" />
-                    {messageFor('interest')}
-                  </p>
-                ) : null}
-                    </fieldset>
-                  ) : null}
-                </div>
-              </div>
               <p className="visually-hidden" aria-live="polite">
                 {[
                   method === 'email' ? `Nuevo campo: ${copy.emailLabel}` : method === 'phone' ? `Nuevos campos: ${copy.phoneCountryLabel} y ${copy.phoneLabel}` : '',
-                  branch ? `Nueva pregunta: ${INTEREST_QUESTIONS[branch]}` : '',
                 ]
                   .filter(Boolean)
                   .join('. ')}

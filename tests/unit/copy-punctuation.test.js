@@ -4,14 +4,7 @@ import * as faq from '../../src/content/faq.js';
 import * as services from '../../src/content/services.js';
 import * as privacy from '../../src/content/privacy.js';
 import * as site from '../../src/content/site.js';
-import {
-  ADVICE_INTERESTS,
-  CONTACT_METHODS,
-  INCOME_OPTIONS,
-  INSURANCE_INTERESTS,
-  INTEREST_QUESTIONS,
-  INTEREST_TYPES,
-} from '../../shared/lead-schema.js';
+import { CONTACT_METHODS, INCOME_OPTIONS } from '../../shared/lead-schema.js';
 
 // Guion largo (U+2014) y semiguion (U+2013) no se usan como puntuación en textos visibles.
 const DASHES = new RegExp(`[${String.fromCharCode(0x2014)}${String.fromCharCode(0x2013)}]`);
@@ -28,10 +21,6 @@ describe('redacción de textos visibles', () => {
     const visibleFormOptions = [
       ...CONTACT_METHODS.map((o) => o.label),
       ...INCOME_OPTIONS.map((o) => o.label),
-      ...INTEREST_TYPES.map((o) => o.label),
-      ...INSURANCE_INTERESTS.map((o) => o.label),
-      ...ADVICE_INTERESTS.map((o) => o.label),
-      ...Object.values(INTEREST_QUESTIONS),
     ];
     const all = [...strings({ copy, faq, services, privacy, site }), ...strings(visibleFormOptions, 'form')];
     const offending = all.filter(([, text]) => DASHES.test(text));

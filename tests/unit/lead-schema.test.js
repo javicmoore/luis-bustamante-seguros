@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import '../../shared/phone-lib.js';
 import {
-  ADVICE_INTERESTS,
   INCOME_OPTIONS,
-  INSURANCE_INTERESTS,
-  interestBranch,
-  interestOptionsFor,
-  leadHeadline,
   normalizeEmail,
   normalizePhone,
   validateLead,
@@ -16,8 +11,6 @@ const base = {
   name: 'Ana López',
   age: '34',
   income: '30_50',
-  interestType: 'ahorro',
-  interest: 'ppr_retiro',
   consent: true,
   website: '',
 };
@@ -36,9 +29,9 @@ describe('validación de la solicitud', () => {
       email: null,
       age: 34,
       income: '30_50',
-      interestType: 'ahorro',
-      interest: 'ppr_retiro',
     });
+    expect(result.value).not.toHaveProperty('interestType');
+    expect(result.value).not.toHaveProperty('interest');
   });
 
   it('acepta una solicitud por correo (dominio en minúsculas)', () => {
@@ -124,41 +117,13 @@ describe('validación de la solicitud', () => {
   });
 });
 
-describe('interés del prospecto', () => {
-  it('"Ahorro o retiro" → asesoría de ahorro; "Un seguro" → seguros', () => {
-    expect(interestBranch('ahorro')).toBe('ahorro');
-    expect(interestBranch('seguro')).toBe('seguro');
-    expect(interestBranch('')).toBe(null);
-    expect(interestOptionsFor('seguro').map((o) => o.label)).toEqual(['Gastos médicos mayores (GMM)', 'Auto', 'Auto turista', 'Hogar', 'Otro']);
-    expect(interestOptionsFor('ahorro').map((o) => o.label)).toEqual(['PPR / retiro', 'Ahorro e inversión', 'Educación', 'Necesito orientación']);
-  });
-
-  it('acepta cada combinación permitida', () => {
-    for (const { value } of INSURANCE_INTERESTS) expect(validateLead({ ...byPhone, interestType: 'seguro', interest: value }).ok).toBe(true);
-    for (const { value } of ADVICE_INTERESTS) expect(validateLead({ ...byPhone, interestType: 'ahorro', interest: value }).ok).toBe(true);
-  });
-
-  it('tipo e interés obligatorios', () => {
-    expect(validateLead({ ...byPhone, interestType: '', interest: '' }).errors).toMatchObject({ interestType: 'required' });
-    expect(validateLead({ ...byPhone, interestType: '', interest: '' }).errors.interest).toBeUndefined();
-    expect(validateLead({ ...byPhone, interest: '' }).errors.interest).toBe('required');
-    expect(validateLead({ ...byPhone, interestType: 'credito' }).errors.interestType).toBe('invalid');
-  });
-
-  it('rechaza combinaciones cruzadas y valores fuera de catálogo', () => {
-    expect(validateLead({ ...byPhone, interestType: 'ahorro', interest: 'gmm' }).errors.interest).toBe('incompatible');
-    expect(validateLead({ ...byPhone, interestType: 'seguro', interest: 'ppr_retiro' }).errors.interest).toBe('incompatible');
-    for (const interest of ['xyz', 'toString', '__proto__', ['gmm'], 1]) {
-      expect(validateLead({ ...byPhone, interestType: 'seguro', interest }).errors.interest).toBe('invalid');
+describe('sin pregunta de interés', () => {
+  it('no exige ni acepta qué producto busca el prospecto', () => {
+    expect(validateLead(byPhone).ok).toBe(true);
+    expect(validateLead(byEmail).ok).toBe(true);
+    for (const extra of [{ interestType: 'seguro' }, { interest: 'gmm' }]) {
+      expect(validateLead({ ...byPhone, ...extra })).toMatchObject({ ok: false, errors: { _form: 'unexpected_field' } });
     }
-  });
-
-  it('encabezados del aviso por interés', () => {
-    expect(leadHeadline('gmm')).toBe('Nuevo prospecto para GMM');
-    expect(leadHeadline('ppr_retiro')).toBe('Nuevo prospecto para PPR');
-    expect(leadHeadline('orientacion')).toBe('Nuevo prospecto — Necesita orientación');
-    expect(leadHeadline('otro_seguro')).toBe('Nuevo prospecto — Otro seguro');
-    expect(leadHeadline('xyz')).toBe('Nuevo prospecto');
   });
 });
 

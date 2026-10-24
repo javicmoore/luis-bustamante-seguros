@@ -83,7 +83,6 @@ export const formCopy = {
   phoneHelpIntl: 'Sin el prefijo del país. También puedes pegar el número completo con su prefijo.',
   incomeLegend: '¿En qué rango se encuentran tus ingresos mensuales?',
   incomeHelp: 'En pesos mexicanos. Solo orienta la conversación; no condiciona tu solicitud.',
-  interestTypeLegend: '¿Qué te interesa?',
   // La autorización se adapta al medio elegido.
   consentLabels: {
     none: 'Autorizo que Luis Bustamante me contacte por el medio que elija arriba para dar seguimiento a esta solicitud.',

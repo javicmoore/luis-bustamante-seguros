@@ -7,6 +7,22 @@ const FAKE = { name: 'Prueba Ficticia', age: '41', phone: '686 000 0042', email:
 // Opción de radio por su texto exacto ("Auto" no debe coincidir con "Auto turista").
 const option = (page, text) => page.locator('label.choice__option').filter({ hasText: new RegExp(`^${text.replace(/[$()]/g, '\\$&')}$`) });
 const submit = (page) => page.getByRole('button', { name: 'Solicitar mi asesoría' }).click();
+// Espera a que el desplazamiento suave termine (scrollY sin cambios durante varios cuadros).
+const settleScroll = (page) =>
+  page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        let last = -1;
+        let same = 0;
+        const tick = () => {
+          if (scrollY === last) same += 1;
+          else [last, same] = [scrollY, 0];
+          if (same > 8) resolve();
+          else requestAnimationFrame(tick);
+        };
+        tick();
+      }),
+  );
 
 async function fillValid(page, overrides = {}) {
   const data = { ...FAKE, method: 'phone', ...overrides };
@@ -21,8 +37,6 @@ async function fillValid(page, overrides = {}) {
     await page.locator('#lead-phone').fill(data.phone);
   }
   await option(page, 'De $30,000 a menos de $50,000').click();
-  await option(page, 'Un seguro').click();
-  await option(page, 'Auto').click();
   await page.locator('label.consent__label').click();
 }
 
@@ -54,7 +68,6 @@ test.describe('formulario de asesoría', () => {
       'Edad: Escribe tu edad.',
       'Medio de contacto: Elige cómo prefieres que Luis te contacte.',
       'Ingresos mensuales: Elige el rango de tus ingresos mensuales.',
-      'Qué te interesa: Elige qué te interesa.',
       'Autorización de contacto: Para que Luis pueda contactarte, marca la autorización.',
     ]);
     await expect(page.locator('#lead-name')).toHaveAttribute('aria-invalid', 'true');
@@ -126,36 +139,32 @@ test.describe('formulario de asesoría', () => {
     await expect(page.locator('#lead-phone-error')).toHaveCount(0);
   });
 
-  test('ingresos e interés: ambas ramas, obligatorios y limpieza al cambiar de rama', async ({ page }) => {
-    const detail = page.locator('.interest').filter({ has: page.locator('input[name="interest"]') });
-    const checked = () => page.locator('input[name="interest"]:checked');
+  test('ingresos obligatorio y sin pregunta de interés ni campos dependientes', async ({ page }) => {
     await expect(page.locator('legend', { hasText: '¿En qué rango se encuentran tus ingresos mensuales?' })).toBeVisible();
     await expect(page.locator('input[name="income"] + .choice__mark + .choice__text')).toHaveText([
       'De $20,000 a menos de $30,000',
       'De $30,000 a menos de $50,000',
       '$50,000 o más',
     ]);
-    await expect(page.locator('input[name="interest"]')).toHaveCount(0);
-
-    await option(page, 'Un seguro').click();
-    await expect(page.locator('legend', { hasText: '¿Qué seguro te interesa?' })).toBeVisible();
-    // La pregunta se despliega en 0.38 s; se elige después, como haría una persona.
-    await page.waitForTimeout(450);
-    await expect(detail.locator('label.choice__option')).toHaveText(['Gastos médicos mayores (GMM)', 'Auto', 'Auto turista', 'Hogar', 'Otro']);
-    expect(await page.evaluate(() => Boolean(document.activeElement?.closest('.interest')))).toBe(false);
-    await option(page, 'Hogar').click();
-    await expect(checked()).toHaveValue('hogar');
-
-    await option(page, 'Ahorro o retiro').click();
-    await expect(page.locator('legend', { hasText: '¿Sobre qué te gustaría recibir asesoría?' })).toBeVisible();
-    await page.waitForTimeout(450);
-    await expect(detail.locator('label.choice__option')).toHaveText(['PPR / retiro', 'Ahorro e inversión', 'Educación', 'Necesito orientación']);
-    await expect(checked()).toHaveCount(0);
+    const form = page.locator('#asesoria form');
+    await expect(form.locator('input[name="interestType"], input[name="interest"]')).toHaveCount(0);
+    await expect(form).not.toContainText(/te interesa|Un seguro|Ahorro o retiro/);
+    // Los únicos grupos de opciones son el medio de contacto y los ingresos.
+    await expect(form.locator('fieldset.choice legend')).toHaveText([/Cómo prefieres/, /ingresos mensuales/]);
 
     await submit(page);
-    await expect(page.locator('#lead-interest-error')).toHaveText('Elige sobre qué te gustaría recibir asesoría.');
-    await option(page, 'Necesito orientación').click();
-    await expect(page.locator('#lead-interest-error')).toHaveCount(0);
+    await expect(page.locator('#lead-income-error')).toHaveText('Elige el rango de tus ingresos mensuales.');
+    await option(page, '$50,000 o más').click();
+    await expect(page.locator('#lead-income-error')).toHaveCount(0);
+  });
+
+  test('con los campos conservados la solicitud se envía', async ({ page }) => {
+    const seen = await captureLead(page);
+    await fillValid(page);
+    await submit(page);
+    await expect(page.locator('.lead-summary')).toHaveCount(0);
+    await expect(page.locator('.lead-result')).toBeVisible();
+    expect(seen.body).toMatchObject({ name: FAKE.name, age: FAKE.age, contactMethod: 'phone', phoneCountry: 'MX', phone: FAKE.phone, income: '30_50', consent: true });
   });
 
   test('envía solo los campos del medio elegido (correo)', async ({ page }) => {
@@ -163,8 +172,8 @@ test.describe('formulario de asesoría', () => {
     await fillValid(page, { method: 'email' });
     await submit(page);
     await expect(page.locator('.lead-result')).toBeVisible();
-    expect(seen.body).toMatchObject({ contactMethod: 'email', email: FAKE.email, income: '30_50', interestType: 'seguro', interest: 'auto', consent: true });
-    expect(Object.keys(seen.body).sort()).toEqual(['age', 'consent', 'contactMethod', 'email', 'income', 'interest', 'interestType', 'name', 'website']);
+    expect(seen.body).toMatchObject({ contactMethod: 'email', email: FAKE.email, income: '30_50', consent: true });
+    expect(Object.keys(seen.body).sort()).toEqual(['age', 'consent', 'contactMethod', 'email', 'income', 'name', 'website']);
   });
 
   test('envía solo los campos del medio elegido (teléfono extranjero)', async ({ page }) => {
@@ -173,7 +182,7 @@ test.describe('formulario de asesoría', () => {
     await submit(page);
     await expect(page.locator('.lead-result')).toBeVisible();
     expect(seen.body).toMatchObject({ contactMethod: 'phone', phoneCountry: 'ES', phone: '612 345 678' });
-    expect(Object.keys(seen.body).sort()).toEqual(['age', 'consent', 'contactMethod', 'income', 'interest', 'interestType', 'name', 'phone', 'phoneCountry', 'website']);
+    expect(Object.keys(seen.body).sort()).toEqual(['age', 'consent', 'contactMethod', 'income', 'name', 'phone', 'phoneCountry', 'website']);
   });
 
   test('la autorización empieza sin marcar y sin ella no se envía', async ({ page }) => {
@@ -356,6 +365,9 @@ test.describe('formulario en móvil', () => {
   test('el header se retira al escribir y la barra de contacto no tapa campos', async ({ page }) => {
     await open(page, '/');
     await page.locator('#asesoria').scrollIntoViewIfNeeded();
+    // Con scroll-behavior: smooth, WebKit sigue desplazándose un momento; se toca cuando la página se detiene,
+    // como haría una persona.
+    await settleScroll(page);
     await option(page, 'Teléfono').click();
     await page.locator('#lead-phone').scrollIntoViewIfNeeded();
     await page.locator('#lead-phone').focus();

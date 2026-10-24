@@ -30,59 +30,55 @@ Template Builder, aprobación de plantillas de WhatsApp, callbacks de estado y s
 2. **Remitente de WhatsApp** registrado (WhatsApp Business vinculado a un Meta Business). Su número debe ser
    **distinto** del de Luis. El código lo valida.
 3. **Plantilla** en Content Template Builder, categoría sugerida *Utility* (WhatsApp puede reclasificarla).
-   Texto propuesto, **versión 3** (21 oct 2026): medio de contacto preferido, correo o teléfono, rango de
-   ingresos e interés. 9 variables numeradas; ninguna al inicio ni al final; nunca dos variables juntas:
+   Texto propuesto, **versión 4** (23 oct 2026): encabezado general fijo, medio de contacto preferido, correo o
+   teléfono y rango de ingresos. 7 variables numeradas; ninguna al inicio ni al final; nunca dos variables juntas:
 
    ```
-   Nuevo prospecto {{1}}
+   Nuevo prospecto
 
-   Folio: {{2}}
-   Nombre: {{3}}
-   Edad: {{4}} años
-   Contacto preferido: {{5}}
-   Dato de contacto: {{6}}
-   Interés: {{7}}
-   Ingresos mensuales: {{8}}
-   Recibida: {{9}}
+   Folio: {{1}}
+   Nombre: {{2}}
+   Edad: {{3}} años
+   Contacto preferido: {{4}}
+   Dato de contacto: {{5}}
+   Ingresos mensuales: {{6}}
+   Recibida: {{7}}
 
    Este aviso se generó automáticamente desde el formulario de tu sitio.
    ```
 
-   - `{{1}}` completa el encabezado según el interés elegido (WhatsApp no admite una variable al inicio del
-     texto, por eso "Nuevo prospecto" es fijo): "para GMM", "para Auto", "para Auto turista", "para Hogar",
-     "para PPR", "para Ahorro e inversión", "para Educación", "— Otro seguro" o "— Necesita orientación".
-   - `{{5}}`: "Correo electrónico" o "Teléfono (llamada o WhatsApp)". `{{6}}`: el correo, o el teléfono en
+   - El encabezado es siempre "Nuevo prospecto": el formulario no pregunta qué producto busca la persona y el
+     aviso no lo deduce.
+   - `{{4}}`: "Correo electrónico" o "Teléfono (llamada o WhatsApp)". `{{5}}`: el correo, o el teléfono en
      E.164 con formato internacional (p. ej. `+52 686 000 1234`, `+1 213 373 4253`). La solicitud siempre llega
      al WhatsApp de Luis aunque la persona prefiera respuesta por correo.
-   - `{{7}}`: interés detallado. El tipo ("Ahorro o retiro" o "Un seguro") decide sus opciones; el servidor
-     rechaza combinaciones cruzadas.
-   - `{{8}}`: "De $20,000 a menos de $30,000 MXN", "De $30,000 a menos de $50,000 MXN" o "$50,000 MXN o más".
+   - `{{6}}`: "De $20,000 a menos de $30,000 MXN", "De $30,000 a menos de $50,000 MXN" o "$50,000 MXN o más".
      Solo orienta la conversación: no aprueba ni rechaza a nadie.
 
-   Valores de ejemplo para la revisión (ficticios): `para GMM`, `LB-7K3M9QX2`, `Ana López`, `34`,
-   `Correo electrónico`, `ana@ejemplo.com`, `Gastos médicos mayores (GMM)`, `De $30,000 a menos de $50,000 MXN`,
-   `21 oct 2026, 11:30 (hora de Mexicali)`.
+   Valores de ejemplo para la revisión (ficticios): `LB-7K3M9QX2`, `Ana López`, `34`, `Correo electrónico`,
+   `ana@ejemplo.com`, `De $30,000 a menos de $50,000 MXN`, `21 oct 2026, 11:30 (hora de Mexicali)`.
    La aprobación suele tardar minutos y puede llegar a 48 h. **No asumir que está aprobada** hasta verla con
    estado *Approved*. Si se rechaza, ajustar y reenviar con otro nombre.
 
-   **Estado (21 oct 2026): esta plantilla no se ha creado ni aprobado, y no se ha probado ningún envío.** Los
+   **Estado (23 oct 2026): esta plantilla no se ha creado ni aprobado, y no se ha probado ningún envío.** Los
    avisos se verificaron solo con pruebas automatizadas (`tests/unit/lead-message.test.js`,
    `tests/unit/leads-handler.test.js`), sin contactar a Twilio.
 
-   Cambios respecto de la versión 2 (8 variables, con teléfono fijo y la pregunta de capacidad de ahorro):
-   - Una plantilla aprobada no se edita: hay que **crear una nueva** (p. ej. `aviso_prospecto_v3`), esperar su
-     aprobación y poner su `HX…` en `TWILIO_CONTENT_SID`. Con un SID anterior el envío fallaría, porque el
-     código manda 9 variables. La versión 2 nunca se creó, así que basta con crear la 3.
+   Cambios respecto de la versión 3 (9 variables, con el encabezado y el detalle según el interés elegido):
+   - Se retiró la pregunta "¿Qué te interesa?" del formulario y, con ella, `{{1}}` del encabezado y la línea
+     "Interés". Una plantilla aprobada no se edita: hay que **crear una nueva** (p. ej. `aviso_prospecto_v4`),
+     esperar su aprobación y poner su `HX…` en `TWILIO_CONTENT_SID`. Con un SID anterior el envío fallaría,
+     porque el código manda 7 variables. Las versiones 2 y 3 nunca se crearon, así que basta con crear la 4.
    - Riesgos de revisión de Meta: más variables por cantidad de texto fijo (si la rechazan por esa proporción,
      agregar texto fijo, no quitar datos) y posible reclasificación de categoría. Un correo dentro de una
      variable puede mostrarse como enlace.
-   - `npm run check:release` mantiene como pendiente "Plantilla de WhatsApp de 9 variables…" hasta marcarla en
+   - `npm run check:release` mantiene como pendiente "Plantilla de WhatsApp de 7 variables…" hasta marcarla en
      `src/content/launch.js` con evidencia.
 4. **Aceptación de Luis**: Luis debe aceptar recibir estas notificaciones del remitente (dejar constancia).
 5. **API Key** (tipo *Standard*): `SK…` + secreto. Se usa para crear mensajes.
 6. **Auth Token** de la cuenta: Twilio firma los callbacks con él. Si se rota, actualizarlo en Vercel.
 
-El orden de las variables lo fija `backend/lead-message.js` (`{{1}}`…`{{9}}`; `previewNotification()` arma
+El orden de las variables lo fija `backend/lead-message.js` (`{{1}}`…`{{7}}`; `previewNotification()` arma
 el texto completo para pruebas). Si cambian el texto de la plantilla, mantengan esa numeración. Los valores se limpian (sin saltos de línea, tabuladores ni espacios
 repetidos), como exige WhatsApp.
 

@@ -5,7 +5,7 @@ para todo México. React 19 + Vite 8, HTML prerenderizado y funciones de Vercel 
 
 > **Estado: versión de trabajo. No está lista para recibir prospectos reales.** El envío a WhatsApp funciona
 > solo con el proveedor simulado; faltan la constancia de autorización de los testimonios, datos del aviso de privacidad, dominio, la
-> plantilla de WhatsApp con el interés del prospecto y la configuración de Twilio/Upstash. Ver [`docs/PENDIENTES.md`](docs/PENDIENTES.md) o
+> plantilla de WhatsApp aprobada y la configuración de Twilio/Upstash. Ver [`docs/PENDIENTES.md`](docs/PENDIENTES.md) o
 > ejecutar `npm run check:release`.
 
 ## Qué incluye

@@ -78,8 +78,8 @@ Al terminar: `status: 'final'` y `updatedAt: 'AAAA-MM-DD'`.
   sitemap y la URL del callback).
 - **Upstash Redis** desde Vercel Marketplace (crea `KV_REST_API_URL` y `KV_REST_API_TOKEN`).
 - **`LEAD_HASH_SECRET`**: cadena aleatoria de 32+ caracteres (ver `.env.example`).
-- **Twilio**: cuenta, remitente de WhatsApp, plantilla aprobada (versión 2, de 8 variables con el interés del
-  prospecto; no se ha creado ni aprobado), aceptación de Luis y credenciales. Guía completa en
+- **Twilio**: cuenta, remitente de WhatsApp, plantilla aprobada (versión 4, de 7 variables con encabezado
+  general "Nuevo prospecto"; no se ha creado ni aprobado), aceptación de Luis y credenciales. Guía completa en
   `docs/WHATSAPP-TWILIO.md`.
 - **Medición**: no se instaló ninguna herramienta. Si se decide usar una, ver "Medición" en el README.
 - **Colores**: acentos ajustados al logo real (cobre #C88040, azul acero #385870) sobre el azul #102A43.
@@ -88,7 +88,7 @@ Al terminar: `status: 'final'` y `updatedAt: 'AAAA-MM-DD'`.
 
 Marcar en `src/content/launch.js` solo con evidencia:
 
-- [ ] Plantilla de WhatsApp v2 (8 variables, con interés) aprobada y su `HX…` en `TWILIO_CONTENT_SID`.
+- [ ] Plantilla de WhatsApp v4 (7 variables, encabezado general) aprobada y su `HX…` en `TWILIO_CONTENT_SID`.
 - [ ] Prueba autorizada de WhatsApp con datos ficticios (plantilla aprobada, aviso recibido por Luis).
 - [ ] Callback de estado recibido y verificado en el dominio final.
 - [ ] Headers reales comprobados en landing, aviso, 404 y API (`curl -I https://dominio/…`).

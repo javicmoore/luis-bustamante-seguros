@@ -34,8 +34,8 @@ export function PrivacyContent({ headingLevel = 2 }) {
       <H>Datos que se recaban</H>
       <p>
         A través del formulario de asesoría: nombre, edad, el medio por el que prefieres que te contacten y el dato
-        correspondiente (correo electrónico o teléfono con su país), el rango de tus ingresos mensuales y el tema que te
-        interesa. El rango de ingresos es un dato patrimonial que solo orienta la conversación: no se usa para aprobar
+        correspondiente (correo electrónico o teléfono con su país), y el rango de tus ingresos
+        mensuales. El rango de ingresos es un dato patrimonial que solo orienta la conversación: no se usa para aprobar
         ni rechazar solicitudes. No se solicitan ingresos exactos, datos de salud ni otros datos sensibles por este
         medio. <Pending>revisión legal del tratamiento de datos patrimoniales</Pending>
       </p>
