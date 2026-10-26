@@ -13,7 +13,8 @@ export const testimonials = [
     name: 'Karla G.',
     context: 'Profesionista independiente',
     quote: [
-      '“Antes veía el retiro como algo muy lejano. Hoy entiendo la importancia de empezar a prepararme desde ahora y construir poco a poco un respaldo para mi futuro.',
+      '“Antes veía el retiro como algo muy lejano.',
+      'Hoy entiendo la importancia de empezar a prepararme desde ahora y construir poco a poco un respaldo para mi futuro.',
       'Agradezco a Luis por explicarme todo de manera clara y puntual.”',
     ],
     authorized: true,

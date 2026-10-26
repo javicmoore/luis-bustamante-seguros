@@ -34,13 +34,14 @@ export function About() {
           <h2 id="about-title" className="section-title" data-section-focus="" data-reveal="">
             {copy.title}
           </h2>
-          <p className="about__intro" data-reveal="" data-reveal-delay="1">
-            {copy.intro}
+          <p className="about__role" data-reveal="" data-reveal-delay="1">
+            {copy.role}
           </p>
-          <p className="about__approach" data-reveal="" data-reveal-delay="1">
-            {copy.approach}
-          </p>
-
+          <div className="about__body" data-reveal="" data-reveal-delay="1">
+            {copy.paragraphs.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
 
           <div className="about__actions" data-reveal="" data-reveal-delay="2">
             <a

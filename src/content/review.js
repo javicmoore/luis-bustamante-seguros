@@ -16,9 +16,9 @@ export const copyReview = [
   },
   {
     id: 'sobre-luis-enfoque',
-    file: 'src/content/copy.js → aboutCopy.approach',
+    file: 'src/content/copy.js → aboutCopy.paragraphs',
     status: 'pendiente',
-    note: 'Párrafo sobre su forma de trabajar (promesa de proceso).',
+    note: 'Presentación de Luis y sus tres párrafos (texto entregado por Javier el 26 oct 2026).',
   },
   {
     id: 'conoce-a-luis',

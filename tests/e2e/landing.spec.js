@@ -45,7 +45,7 @@ test.describe('estructura y contenido', () => {
       await expect(about.getByText(term, { exact: true })).toHaveCount(0);
     }
     await expect(about.locator('.about__portrait img')).toHaveCount(1);
-    await expect(about.locator('#about-title')).toHaveText('Hola, soy Luis Bustamante.');
+    await expect(about.locator('#about-title')).toHaveText('Hola, Soy Luis Bustamante.');
     await expect(about.getByRole('link', { name: /Solicitar asesoría/ })).toBeVisible();
     await expect(about.locator('a[href*="wa.me"]')).toHaveCount(1);
   });
@@ -258,7 +258,7 @@ test.describe('"Conoce a Luis": video de presentación', () => {
 
 test.describe('testimonios', () => {
   const QUOTES = [
-    ['Karla G.', 'Profesionista independiente', ['“Antes veía el retiro como algo muy lejano. Hoy entiendo la importancia de empezar a prepararme desde ahora y construir poco a poco un respaldo para mi futuro.', 'Agradezco a Luis por explicarme todo de manera clara y puntual.”']],
+    ['Karla G.', 'Profesionista independiente', ['“Antes veía el retiro como algo muy lejano.', 'Hoy entiendo la importancia de empezar a prepararme desde ahora y construir poco a poco un respaldo para mi futuro.', 'Agradezco a Luis por explicarme todo de manera clara y puntual.”']],
     ['Sergio C.', 'Ingeniero', ['“Lo que más me gustó de este plan es poder establecer una estrategia de ahorro acorde con mis ingresos y objetivos financieros.', 'Desde el principio, Luis me explicó cómo funciona y qué aspectos debía considerar antes de tomar una decisión.”']],
     ['Alberto G.', 'Empresario', ['“No quería otro seguro más. Le dije a Luis que buscaba algo que me sirviera a mí.', 'Me enseñó cómo separar mi ahorro para mi retiro y a la vez dejar una base para la educación de mis hijos.', 'Ahora todo lo que ahorro tiene un para qué.”']],
   ];

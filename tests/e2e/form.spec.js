@@ -6,7 +6,7 @@ const FAKE = { name: 'Prueba Ficticia', age: '41', phone: '686 000 0042', email:
 
 // Opción de radio por su texto exacto ("Auto" no debe coincidir con "Auto turista").
 const option = (page, text) => page.locator('label.choice__option').filter({ hasText: new RegExp(`^${text.replace(/[$()]/g, '\\$&')}$`) });
-const submit = (page) => page.getByRole('button', { name: 'Solicitar mi asesoría' }).click();
+const submit = (page) => page.getByRole('button', { name: 'Cotizar mi plan de ahorro' }).click();
 // Espera a que el desplazamiento suave termine (scrollY sin cambios durante varios cuadros).
 const settleScroll = (page) =>
   page.evaluate(
@@ -125,8 +125,11 @@ test.describe('formulario de asesoría', () => {
     await phone.fill('+52 686 000 0042');
     await expect(country).toHaveValue('MX');
     await expect(phone).toHaveValue('6860000042');
-    await phone.fill('+34 612 345 678');
-    await expect(country).toHaveValue('ES');
+    // Los prefijos de otros países se reconocen cuando la librería (carga diferida) ya llegó.
+    await expect(async () => {
+      await phone.fill('+34 612 345 678');
+      await expect(country).toHaveValue('ES', { timeout: 1000 });
+    }).toPass({ timeout: 15000 });
     await expect(phone).toHaveValue('612345678');
     await expect(page.locator('#lead-phone-error')).toHaveCount(0);
 
@@ -233,7 +236,7 @@ test.describe('formulario de asesoría', () => {
       });
     });
     await fillValid(page);
-    await page.getByRole('button', { name: 'Solicitar mi asesoría' }).dblclick();
+    await page.getByRole('button', { name: 'Cotizar mi plan de ahorro' }).dblclick();
     await page.locator('.lead-form__submit').click({ force: true }).catch(() => {});
     await expect(page.locator('.lead-result')).toBeVisible();
     expect(posted).toBe(1);

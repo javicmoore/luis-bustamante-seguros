@@ -23,7 +23,7 @@ test.describe('despliegue de demostración', () => {
     page.on('request', (r) => r.url().includes('/api/') && (requests += 1));
     await open(page, '/#asesoria');
     await expect(page.locator('.lead-form__demo')).toBeVisible();
-    await page.getByRole('button', { name: 'Solicitar mi asesoría' }).click();
+    await page.getByRole('button', { name: 'Cotizar mi plan de ahorro' }).click();
     await expect(page.locator('.lead-summary')).toBeVisible();
     await page.locator('#lead-name').fill('Prueba Ficticia');
     await page.locator('#lead-age').fill('40');
@@ -31,7 +31,7 @@ test.describe('despliegue de demostración', () => {
     await page.locator('#lead-phone').fill('686 000 0042');
     await page.locator('label.choice__option').filter({ hasText: /^\$50,000 o más$/ }).click();
     await page.locator('label.consent__label').click();
-    await page.getByRole('button', { name: 'Solicitar mi asesoría' }).click();
+    await page.getByRole('button', { name: 'Cotizar mi plan de ahorro' }).click();
     const result = page.locator('.lead-result');
     await expect(result).toContainText('no se envió nada');
     await expect(result).toContainText('Luis no recibió ninguna solicitud');

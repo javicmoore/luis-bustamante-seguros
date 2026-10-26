@@ -42,7 +42,7 @@ for (const [tag, ctx] of [['mobile', mobile], ['desktop', desktop]]) {
   await open(page, '/');
   const form = page.locator('#asesoria .request__card');
   await form.scrollIntoViewIfNeeded();
-  await page.getByRole('button', { name: 'Solicitar mi asesoría' }).click();
+  await page.getByRole('button', { name: 'Cotizar mi plan de ahorro' }).click();
   await page.waitForTimeout(400);
   await form.screenshot({ path: `${out}/${tag}-form-errors.png` });
 
@@ -50,7 +50,7 @@ for (const [tag, ctx] of [['mobile', mobile], ['desktop', desktop]]) {
     route.fulfill({ status: 502, contentType: 'application/json', body: '{"ok":false,"error":"notification_failed","id":"LB-AAAAAAAA"}' }),
   );
   await fill(page);
-  await page.getByRole('button', { name: 'Solicitar mi asesoría' }).click();
+  await page.getByRole('button', { name: 'Cotizar mi plan de ahorro' }).click();
   await page.waitForTimeout(500);
   await form.screenshot({ path: `${out}/${tag}-form-failure.png` });
 

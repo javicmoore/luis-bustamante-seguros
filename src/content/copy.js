@@ -63,7 +63,7 @@ export const simulatorCopy = {
 
 export const formCopy = {
   eyebrow: 'Solicita tu asesoría',
-  title: 'Platica con Luis sobre lo que necesitas.',
+  title: 'Formulario para el plan de ahorro',
   intro:
     'Comparte tus datos y Luis podrá ponerse en contacto contigo para conocer lo que necesitas.',
   points: [
@@ -92,7 +92,7 @@ export const formCopy = {
   privacyShort:
     'Tus datos se usan solo para atender esta solicitud. No se comparten para publicidad ni se usan para otras campañas.',
   privacyLink: 'Leer el aviso de privacidad',
-  submit: 'Solicitar mi asesoría',
+  submit: 'Cotizar mi plan de ahorro',
   submitting: 'Enviando tu solicitud…',
 };
 
@@ -106,13 +106,13 @@ export const servicesCopy = {
 
 export const aboutCopy = {
   eyebrow: 'Sobre Luis',
-  title: 'Hola, soy Luis Bustamante.',
-  // Hechos confirmados: actividad, ubicación, alcance y servicios.
-  intro:
-    'Soy agente de seguros y asesor financiero en Mexicali, Baja California. Brindo asesoría a personas de todo México en ahorro e inversión, retiro, educación y seguros de vida, gastos médicos mayores, hogar y auto.',
-  // Texto propuesto (pendiente de aprobación de Luis).
-  approach:
-    'Mi forma de trabajar empieza por escuchar qué quieres proteger o lograr. Después revisamos juntos las opciones disponibles y te explico cada una con claridad, para que decidas con calma.',
+  title: 'Hola, Soy Luis Bustamante.',
+  role: 'Agente de seguros y asesor financiero.',
+  paragraphs: [
+    'Acompaño a médicos, empresarios, profesionistas independientes, familias y personas en la protección de su patrimonio, la elección de soluciones de seguros y la construcción de planes de ahorro e inversión alineados con sus objetivos.',
+    'Mi compromiso es brindarte una asesoría clara, cercana y personalizada para que tomes decisiones con confianza y avances hacia el futuro que deseas.',
+    'Más que ofrecerte una póliza o un plan financiero, quiero ser tu asesor de confianza a largo plazo.',
+  ],
 };
 
 export const videoCopy = {

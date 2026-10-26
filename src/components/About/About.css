@@ -66,20 +66,28 @@
   margin-bottom: 1rem;
 }
 
-.about__intro {
-  margin-top: 1.5rem;
+.about__role {
+  margin-top: 0.75rem;
   font-size: var(--text-lg);
-  line-height: 1.6;
+  font-weight: 600;
+  line-height: 1.5;
   color: var(--navy-900);
   max-width: 36rem;
 }
 
-.about__approach {
-  margin-top: 1rem;
+.about__body {
+  margin-top: 1.25rem;
+  max-width: 36rem;
+}
+
+.about__body p {
   font-size: var(--text-md);
   line-height: 1.7;
   color: var(--slate-600);
-  max-width: 36rem;
+}
+
+.about__body p + p {
+  margin-top: 1rem;
 }
 
 .about__actions {
