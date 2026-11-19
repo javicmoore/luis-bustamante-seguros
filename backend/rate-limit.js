@@ -17,8 +17,13 @@ export async function checkRequestRate(store, { ipHash, nowMs = Date.now(), limi
     : { limited: false };
 }
 
-/** Límites para solicitudes nuevas y válidas (las que pueden generar una notificación). */
-export async function checkLeadRate(store, { ipHash, contactHash, dailyCap, nowMs = Date.now() }) {
+/**
+ * Límites para solicitudes nuevas y válidas (las que pueden generar una notificación).
+ * La reserva es todo o nada: si cualquier regla (IP, contacto o tope global) rechaza la solicitud,
+ * ningún contador cambia, así que un intento rechazado no consume el cupo de los demás.
+ * `mark` ({ key, value, ttl }) se escribe en la misma operación atómica que la reserva.
+ */
+export async function checkLeadRate(store, { ipHash, contactHash, dailyCap, nowMs = Date.now(), mark }) {
   const day = windowStart(nowMs, DAY);
   const rules = [
     { rule: 'ip_10min', limit: 5, size: TEN_MINUTES, key: `rl:ip:${ipHash}:${windowStart(nowMs, TEN_MINUTES)}` },
@@ -26,11 +31,11 @@ export async function checkLeadRate(store, { ipHash, contactHash, dailyCap, nowM
     { rule: 'contact_day', limit: 3, size: DAY, key: `rl:ct:${contactHash}:${day}` },
     { rule: 'global_day', limit: dailyCap, size: DAY, key: `rl:all:${day}` },
   ];
-  const counts = await store.incrMany(rules.map(({ key, size }) => ({ key, ttl: size })));
-  for (let i = 0; i < rules.length; i += 1) {
-    if (counts[i] > rules[i].limit) {
-      return { limited: true, retryAfter: secondsLeft(nowMs, rules[i].size), rule: rules[i].rule };
-    }
-  }
-  return { limited: false };
+  const result = await store.reserve(
+    rules.map(({ key, size, limit }) => ({ key, ttl: size, limit })),
+    mark,
+  );
+  if (result.ok) return { limited: false };
+  const blocked = rules[result.index];
+  return { limited: true, retryAfter: secondsLeft(nowMs, blocked.size), rule: blocked.rule };
 }

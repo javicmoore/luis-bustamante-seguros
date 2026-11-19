@@ -1,6 +1,6 @@
 // Almacenamiento compartido en Upstash Redis mediante su API REST (sin dependencias).
 // Acceso privado con token del servidor; nunca exponer la URL/token al navegador.
-import { CREATE_LEAD, UPDATE_NOTIFY } from './scripts.js';
+import { CREATE_LEAD, REPLACE_IF_EQUAL, RESERVE, UPDATE_NOTIFY } from './scripts.js';
 
 export class StoreError extends Error {
   constructor(code) {
@@ -67,6 +67,9 @@ export function createUpstashStore({ url, token, fetchImpl = fetch, timeoutMs = 
     async del(key) {
       await command('DEL', key);
     },
+    async replaceIfEqual(key, expected, value, ttlSec) {
+      return (await command('EVAL', REPLACE_IF_EQUAL, '1', key, expected, value, String(ttlSec))) === 1;
+    },
     async incrMany(entries) {
       const commands = entries.flatMap(({ key, ttl }) => [
         ['SET', key, '0', 'EX', String(ttl), 'NX'],
@@ -74,6 +77,17 @@ export function createUpstashStore({ url, token, fetchImpl = fetch, timeoutMs = 
       ]);
       const results = await transaction(commands);
       return entries.map((_, i) => Number(results[i * 2 + 1]));
+    },
+    async reserve(entries, mark) {
+      const n = entries.length;
+      const keys = entries.map((e) => e.key);
+      const args = [String(n), ...entries.map((e) => String(e.limit)), ...entries.map((e) => String(e.ttl))];
+      if (mark) {
+        keys.push(mark.key);
+        args.push(mark.value, String(mark.ttl));
+      }
+      const index = Number(await command('EVAL', RESERVE, String(keys.length), ...keys, ...args));
+      return index === 0 ? { ok: true } : { ok: false, index: index - 1 };
     },
     async createLead(key, fields, ttlSec) {
       return (await command('EVAL', CREATE_LEAD, '1', key, String(ttlSec), ...flatten(fields))) === 1;

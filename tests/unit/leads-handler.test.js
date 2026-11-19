@@ -272,6 +272,267 @@ describe('límites de uso', () => {
   });
 });
 
+describe('cupo diario: solo las solicitudes admitidas lo consumen', () => {
+  // Contadores de una regla (p. ej. 'rl:all:') en el almacenamiento de prueba.
+  const counters = (store, prefix) =>
+    [...store._dump()].filter(([k]) => k.startsWith(prefix)).map(([, v]) => Number(v.value));
+  const total = (store, prefix) => counters(store, prefix).reduce((a, b) => a + b, 0);
+  const leadFor = (i) => ({ ...validLead(), phone: `686 222 ${String(1000 + i)}` });
+
+  it('un rechazo por límite de IP no consume el cupo global', async () => {
+    const { handle, store } = setup({ env: devEnv({ LEAD_DAILY_CAP: '50' }) });
+    const statuses = [];
+    for (let i = 0; i < 8; i += 1) statuses.push((await handle(leadRequest(leadFor(i), { ip: '198.51.100.30' }))).status);
+    expect(statuses).toEqual([201, 201, 201, 201, 201, 429, 429, 429]);
+    expect(total(store, 'rl:all:')).toBe(5);
+    expect(total(store, 'rl:ip:')).toBe(5);
+    expect(total(store, 'rl:ipd:')).toBe(5);
+  });
+
+  it('un rechazo por límite de contacto no consume el cupo global ni el de la IP', async () => {
+    const { handle, store } = setup();
+    const statuses = [];
+    for (let i = 0; i < 6; i += 1) statuses.push((await handle(leadRequest(validLead(), { ip: `192.0.2.${i + 10}` }))).status);
+    expect(statuses).toEqual([201, 201, 201, 429, 429, 429]);
+    expect(total(store, 'rl:all:')).toBe(3);
+    expect(total(store, 'rl:ct:')).toBe(3);
+    expect(total(store, 'rl:ip:')).toBe(3);
+  });
+
+  it('con el tope global lleno, los rechazos no mueven ningún contador', async () => {
+    const { handle, store } = setup({ env: devEnv({ LEAD_DAILY_CAP: '2' }) });
+    for (let i = 0; i < 2; i += 1) expect((await handle(leadRequest(leadFor(i), { ip: '192.0.2.77' }))).status).toBe(201);
+    // rl:req: es el límite general de peticiones por IP: cuenta todo POST a propósito.
+    const before = JSON.stringify([...store._dump()].filter(([k]) => k.startsWith('rl:') && !k.startsWith('rl:req:')));
+    for (let i = 2; i < 6; i += 1) expect((await handle(leadRequest(leadFor(i), { ip: '192.0.2.77' }))).status).toBe(429);
+    expect(JSON.stringify([...store._dump()].filter(([k]) => k.startsWith('rl:') && !k.startsWith('rl:req:')))).toBe(before);
+  });
+
+  it('una solicitud rechazada libera su llave: reintentarla con la misma llave vuelve a evaluarla', async () => {
+    const { handle, store, notifier } = setup({ env: devEnv({ LEAD_DAILY_CAP: '1' }) });
+    expect((await handle(leadRequest(leadFor(0), { ip: '192.0.2.80' }))).status).toBe(201);
+    const key = newKey();
+    expect((await handle(leadRequest(leadFor(1), { key, ip: '192.0.2.81' }))).status).toBe(429);
+    expect(store._dump().has(`idem:${key}`)).toBe(false);
+    expect(total(store, 'rl:all:')).toBe(1);
+    expect(notifier.calls).toHaveLength(1);
+  });
+
+  it('reintentar con la misma llave (fallo del proveedor o respuesta repetida) no consume otro lugar', async () => {
+    const { handle, store, notifier } = setup({ outcomes: ['failed', 'accepted'] });
+    const key = newKey();
+    expect((await handle(leadRequest(validLead(), { key }))).status).toBe(502);
+    expect(total(store, 'rl:all:')).toBe(1);
+    expect((await handle(leadRequest(validLead(), { key }))).status).toBe(201);
+    expect(total(store, 'rl:all:')).toBe(1);
+    const again = await handle(leadRequest(validLead(), { key }));
+    expect((await again.json()).replayed).toBe(true);
+    expect(total(store, 'rl:all:')).toBe(1);
+    expect(total(store, 'rl:ct:')).toBe(1);
+    expect(notifier.calls).toHaveLength(2);
+  });
+
+  it('solicitudes simultáneas: nunca se admiten más que el tope y cada una consume un solo lugar', async () => {
+    const { handle, store, notifier } = setup({ env: devEnv({ LEAD_DAILY_CAP: '5' }), notifierOptions: { delayMs: 5 } });
+    const responses = await Promise.all(
+      Array.from({ length: 20 }, (_, i) => handle(leadRequest(leadFor(i), { ip: `203.0.113.${100 + i}` }))),
+    );
+    const statuses = responses.map((r) => r.status);
+    expect(statuses.filter((s) => s === 201)).toHaveLength(5);
+    expect(statuses.filter((s) => s === 429)).toHaveLength(15);
+    expect(total(store, 'rl:all:')).toBe(5);
+    expect(notifier.calls).toHaveLength(5);
+  });
+
+  it('doble envío simultáneo con la misma llave: un solo lugar', async () => {
+    const { handle, store } = setup({ notifierOptions: { delayMs: 20 } });
+    const key = newKey();
+    const statuses = (await Promise.all(Array.from({ length: 5 }, () => handle(leadRequest(validLead(), { key }))))).map((r) => r.status);
+    expect(statuses.filter((s) => s === 201)).toHaveLength(1);
+    expect(statuses.filter((s) => s === 409)).toHaveLength(4);
+    expect(total(store, 'rl:all:')).toBe(1);
+    expect(total(store, 'rl:ct:')).toBe(1);
+  });
+
+  // Interrupción justo después de reservar: la siguiente operación del almacenamiento falla
+  // (como si la función se detuviera) y el reintento llega con la misma llave pasados 60 s.
+  for (const [label, crashOn] of [
+    ['antes de guardar el avance', 'set'],
+    ['antes de crear el registro', 'createLead'],
+  ]) {
+    it(`interrupción tras reservar (${label}): el reintento no cobra otro lugar ni duplica el aviso`, async () => {
+      let t = Date.parse('2026-11-17T18:00:00Z');
+      const store = memoryStore();
+      let armed = false;
+      let crashed = false;
+      const crashing = {
+        ...store,
+        async reserve(...args) {
+          const result = await store.reserve(...args);
+          if (result.ok && !crashed) armed = true;
+          return result;
+        },
+        async [crashOn](...args) {
+          if (armed) {
+            armed = false;
+            crashed = true;
+            throw new StoreError('store_timeout');
+          }
+          return store[crashOn](...args);
+        },
+      };
+      const notifier = fakeNotifier();
+      const handle = createLeadsHandler({ env: devEnv(), store: crashing, notifier, now: () => new Date(t) });
+      const key = newKey();
+
+      const first = await handle(leadRequest(validLead(), { key }));
+      expect(first.status).toBe(503);
+      expect(total(store, 'rl:all:')).toBe(1);
+      expect(notifier.calls).toHaveLength(0);
+
+      // Antes de 60 s sigue "en proceso".
+      t += 30_000;
+      expect((await handle(leadRequest(validLead(), { key }))).status).toBe(409);
+
+      t += 31_000;
+      const retry = await handle(leadRequest(validLead(), { key }));
+      expect(retry.status).toBe(201);
+      expect(total(store, 'rl:all:')).toBe(1);
+      expect(total(store, 'rl:ct:')).toBe(1);
+      expect(total(store, 'rl:ip:')).toBe(1);
+      expect(notifier.calls).toHaveLength(1);
+
+      // Un reintento más devuelve el mismo folio sin volver a avisar.
+      const again = await (await handle(leadRequest(validLead(), { key }))).json();
+      expect(again).toMatchObject({ id: (await retry.json()).id, replayed: true });
+      expect(notifier.calls).toHaveLength(1);
+      expect(total(store, 'rl:all:')).toBe(1);
+    });
+  }
+
+  // Almacenamiento de prueba con fallos programables:
+  //   reserveFails: 'applied' → la reserva se aplica pero Redis no lo confirma (timeout de respuesta)
+  //                 'not_applied' → la reserva no se aplica y falla
+  //   slowIdemReads: retrasa la lectura de llaves idem: para que varios reintentos lean el mismo estado.
+  function faultyStore({ reserveFails, slowIdemReads = false }) {
+    const store = memoryStore();
+    let failed = false;
+    return {
+      raw: store,
+      ...store,
+      async get(key) {
+        const value = await store.get(key);
+        if (slowIdemReads && key.startsWith('idem:')) await new Promise((r) => setTimeout(r, 15));
+        return value;
+      },
+      async reserve(...args) {
+        if (reserveFails && !failed) {
+          failed = true;
+          if (reserveFails === 'applied') await store.reserve(...args);
+          throw new StoreError('store_timeout');
+        }
+        return store.reserve(...args);
+      },
+    };
+  }
+  const leadRecords = (store) => [...store._dump().keys()].filter((k) => k.startsWith('lead:')).length;
+
+  for (const reserveFails of ['applied', 'not_applied']) {
+    it(`Redis no confirma la reserva (${reserveFails === 'applied' ? 'sí se aplicó' : 'no se aplicó'}): se conserva la llave y se cobra un solo lugar`, async () => {
+      let t = Date.parse('2026-11-18T18:00:00Z');
+      const store = faultyStore({ reserveFails });
+      const notifier = fakeNotifier();
+      const handle = createLeadsHandler({ env: devEnv(), store, notifier, now: () => new Date(t) });
+      const key = newKey();
+
+      expect((await handle(leadRequest(validLead(), { key }))).status).toBe(503);
+      // La llave se conserva: no se sabe si el lugar quedó cobrado.
+      expect(store.raw._dump().has(`idem:${key}`)).toBe(true);
+      expect(total(store.raw, 'rl:all:')).toBe(reserveFails === 'applied' ? 1 : 0);
+      expect((await handle(leadRequest(validLead(), { key }))).status).toBe(409);
+
+      t += 61_000;
+      const retry = await handle(leadRequest(validLead(), { key }));
+      expect(retry.status).toBe(201);
+      expect(total(store.raw, 'rl:all:')).toBe(1);
+      expect(total(store.raw, 'rl:ct:')).toBe(1);
+      expect(notifier.calls).toHaveLength(1);
+      expect(leadRecords(store.raw)).toBe(1);
+    });
+
+    it(`varios reintentos simultáneos de una solicitud interrumpida (${reserveFails === 'applied' ? 'con' : 'sin'} lugar ya cobrado): uno solo la reclama`, async () => {
+      let t = Date.parse('2026-11-18T18:00:00Z');
+      const store = faultyStore({ reserveFails, slowIdemReads: true });
+      const notifier = fakeNotifier(['accepted'], { delayMs: 10 });
+      const handle = createLeadsHandler({ env: devEnv(), store, notifier, now: () => new Date(t) });
+      const key = newKey();
+
+      expect((await handle(leadRequest(validLead(), { key }))).status).toBe(503);
+      t += 61_000;
+      const statuses = (
+        await Promise.all(Array.from({ length: 6 }, () => handle(leadRequest(validLead(), { key }))))
+      ).map((r) => r.status);
+      expect(statuses.filter((code) => code === 201)).toHaveLength(1);
+      expect(statuses.filter((code) => code === 409)).toHaveLength(5);
+      expect(total(store.raw, 'rl:all:')).toBe(1);
+      expect(total(store.raw, 'rl:ct:')).toBe(1);
+      expect(notifier.calls).toHaveLength(1);
+      expect(leadRecords(store.raw)).toBe(1);
+    });
+  }
+
+  it('varios reintentos simultáneos tras una interrupción después de reservar: un solo lugar y un solo aviso', async () => {
+    let t = Date.parse('2026-11-18T18:00:00Z');
+    const base = memoryStore();
+    let crashNext = false;
+    let crashed = false;
+    const store = {
+      ...base,
+      async get(key) {
+        const value = await base.get(key);
+        if (key.startsWith('idem:')) await new Promise((r) => setTimeout(r, 15));
+        return value;
+      },
+      async reserve(...args) {
+        const result = await base.reserve(...args);
+        if (result.ok && !crashed) crashNext = true;
+        return result;
+      },
+      async createLead(...args) {
+        if (crashNext) {
+          crashNext = false;
+          crashed = true;
+          throw new StoreError('store_timeout');
+        }
+        return base.createLead(...args);
+      },
+    };
+    const notifier = fakeNotifier(['accepted'], { delayMs: 10 });
+    const handle = createLeadsHandler({ env: devEnv(), store, notifier, now: () => new Date(t) });
+    const key = newKey();
+
+    expect((await handle(leadRequest(validLead(), { key }))).status).toBe(503);
+    t += 61_000;
+    const statuses = (await Promise.all(Array.from({ length: 6 }, () => handle(leadRequest(validLead(), { key }))))).map(
+      (r) => r.status,
+    );
+    expect(statuses.filter((code) => code === 201)).toHaveLength(1);
+    expect(statuses.filter((code) => code === 409)).toHaveLength(5);
+    expect(total(base, 'rl:all:')).toBe(1);
+    expect(notifier.calls).toHaveLength(1);
+    expect(leadRecords(base)).toBe(1);
+  });
+
+  it('simultáneas desde una misma IP: el límite de 5 por 10 minutos se mantiene sin gastar el global', async () => {
+    const { handle, store } = setup({ notifierOptions: { delayMs: 5 } });
+    const statuses = (
+      await Promise.all(Array.from({ length: 12 }, (_, i) => handle(leadRequest(leadFor(i), { ip: '198.51.100.99' }))))
+    ).map((r) => r.status);
+    expect(statuses.filter((s) => s === 201)).toHaveLength(5);
+    expect(total(store, 'rl:all:')).toBe(5);
+  });
+});
+
 describe('configuración y almacenamiento', () => {
   it('producción sin credenciales → 503 controlado (nunca éxito ficticio)', async () => {
     const notifier = fakeNotifier();

@@ -101,6 +101,13 @@ export async function processLead({ lead, idempotencyKey, ipHash, deps }) {
     store.set(idemKey, JSON.stringify({ ...state, fp: fingerprint, at: now().getTime() }), IDEMPOTENCY_TTL);
 
   let existing = null;
+  // Una ejecución interrumpida antes de crear el registro ya había reservado su cupo.
+  let reserved = false;
+  // true cuando este reintento ya reclamó la llave de una ejecución interrumpida.
+  let claimed = false;
+  let receivedAt = now();
+  const processing = (extra) =>
+    JSON.stringify({ state: 'processing', fp: fingerprint, at: receivedAt.getTime(), ...extra });
   const existingRaw = await store.get(idemKey);
   if (existingRaw) {
     existing = parseRecord(existingRaw);
@@ -117,40 +124,64 @@ export async function processLead({ lead, idempotencyKey, ipHash, deps }) {
         await saveState({ state: 'pending', leadId: existing.leadId });
         return received(existing.leadId, 'pending', demo, true);
       }
-      await store.del(idemKey);
+      // Reclamo atómico: la llave se reemplaza solo si sigue siendo exactamente la que se leyó. Si
+      // varios reintentos llegan a la vez, uno solo lo logra; los demás reciben 409 sin reservar ni avisar.
+      reserved = existing.reserved === true;
+      claimed = await store.replaceIfEqual(
+        idemKey,
+        existingRaw,
+        processing(reserved ? { reserved: true } : {}),
+        IDEMPOTENCY_TTL,
+      );
+      if (!claimed) return { status: 409, body: { ok: false, error: 'in_progress' } };
       existing = null;
     }
   }
 
   let leadId;
-  let receivedAt = now();
 
   if (!existing) {
     // Límite diario por dato de contacto (correo o teléfono), siempre como seudónimo HMAC.
     const contact = lead.contactMethod === 'email' ? `email:${lead.email.toLowerCase()}` : `phone:${lead.phoneE164}`;
     const contactHash = hmacHex(config.hashSecret, contact).slice(0, 32);
-    const limit = await checkLeadRate(store, {
-      ipHash,
-      contactHash,
-      dailyCap: config.dailyCap,
-      nowMs: receivedAt.getTime(),
-    });
-    if (limit.limited) {
-      logEvent('lead_rate_limited', { rule: limit.rule });
-      return {
-        status: 429,
-        body: { ok: false, error: 'rate_limited' },
-        headers: { 'Retry-After': String(limit.retryAfter) },
-      };
+    // Primero se reclama la llave: solo quien la reclama reserva cupo, así un doble envío
+    // simultáneo con la misma llave consume un solo lugar (el otro recibe 409 sin contar).
+    if (!claimed) {
+      claimed = await store.setNX(idemKey, processing(), IDEMPOTENCY_TTL);
+      if (!claimed) return { status: 409, body: { ok: false, error: 'in_progress' } };
     }
-    const claimed = await store.setNX(
-      idemKey,
-      JSON.stringify({ state: 'processing', fp: fingerprint, at: receivedAt.getTime() }),
-      IDEMPOTENCY_TTL,
-    );
-    if (!claimed) return { status: 409, body: { ok: false, error: 'in_progress' } };
+    if (!reserved) {
+      let limit;
+      try {
+        // La reserva y la marca "ya reservó" se guardan juntas (operación atómica): si la función se
+        // interrumpe después, el reintento con la misma llave sabe que su lugar ya está cobrado.
+        limit = await checkLeadRate(store, {
+          ipHash,
+          contactHash,
+          dailyCap: config.dailyCap,
+          nowMs: receivedAt.getTime(),
+          mark: { key: idemKey, value: processing({ reserved: true }), ttl: IDEMPOTENCY_TTL },
+        });
+      } catch (error) {
+        // Redis no confirmó si la reserva se aplicó (p. ej. timeout: el script pudo ejecutarse igual).
+        // Se conserva la llave en "processing": pasados 60 s, un reintento la reclama y, por la marca,
+        // sabe si el lugar ya estaba cobrado. Borrarla aquí podría cobrar un segundo lugar.
+        logEvent('lead_reserve_unconfirmed', { reason: error?.code || 'unknown' });
+        throw error;
+      }
+      if (limit.limited) {
+        // Rechazada: se libera la llave para que un reintento posterior sea una solicitud nueva.
+        await store.del(idemKey);
+        logEvent('lead_rate_limited', { rule: limit.rule });
+        return {
+          status: 429,
+          body: { ok: false, error: 'rate_limited' },
+          headers: { 'Retry-After': String(limit.retryAfter) },
+        };
+      }
+    }
     leadId = await createLeadRecord(store, lead, config, receivedAt);
-    await saveState({ state: 'processing', leadId });
+    await saveState({ state: 'processing', leadId, reserved: true });
     logEvent('lead_received', { leadId, store: store.kind });
   } else {
     // Reintento tras un rechazo del proveedor: mismo folio, sin duplicar el registro.

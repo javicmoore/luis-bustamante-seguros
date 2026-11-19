@@ -37,9 +37,19 @@ reales (aún no configurados). No se promete invulnerabilidad: estos son los con
   `to`, `contentSid`) → 400. Destinatario, plantilla, remitente y credenciales nunca vienen del navegador.
 - Origen permitido (dominio configurado y URLs de Vercel; localhost/red privada solo fuera de producción) y
   `Sec-Fetch-Site` como defensa adicional, **no** como autenticación.
-- Límites de uso en almacenamiento compartido (Upstash, transacción `MULTI/EXEC`): 30 peticiones/10 min por IP;
-  para solicitudes nuevas, 5/10 min y 20/día por IP, 3/día por teléfono y un tope global diario
+- Límites de uso en almacenamiento compartido (Upstash): 30 peticiones/10 min por IP (transacción
+  `MULTI/EXEC`); para solicitudes nuevas, 5/10 min y 20/día por IP, 3/día por teléfono y un tope global diario
   (`LEAD_DAILY_CAP`). IP y teléfono se guardan como seudónimos HMAC con `LEAD_HASH_SECRET`.
+- Cupo de solicitudes nuevas: se reserva **todo o nada** con un script atómico (`EVAL`): si cualquier regla
+  rechaza la solicitud, ningún contador cambia, así que un rechazo por IP o por contacto no gasta el tope global.
+  La llave de idempotencia se reclama antes de reservar y se libera si hay rechazo; reintentar con la misma llave
+  (tras un fallo del proveedor o una respuesta repetida) no reserva otro lugar.
+  La reserva y la marca "ya reservó" en la llave de idempotencia se escriben en el mismo script: si la función
+  se interrumpe justo después, el reintento con la misma llave (pasados 60 s) no cobra otro lugar ni repite el
+  aviso. Una solicitud interrumpida se reclama con un reemplazo condicional atómico (solo si la llave sigue
+  igual a como se leyó): si llegan varios reintentos a la vez, uno solo continúa y los demás reciben 409. Si Redis
+  no confirma la reserva (p. ej. timeout), la llave se conserva para recuperarla pasados 60 s. **Pendiente:** ejecutar el script contra un Redis real o un Upstash exclusivo de pruebas; hasta ahora se
+  verificó con el almacenamiento en memoria y con el texto del script en un intérprete de Lua (no Redis).
 - Campo trampa (honeypot) → 400 genérico; nunca un éxito ficticio.
 - Idempotencia con llave UUID del navegador: reintentos sin duplicar, 409 mientras procesa, 422 si se reutiliza
   la llave con otros datos, reintento tras fallo con el mismo folio, recuperación de ejecuciones interrumpidas.
@@ -68,7 +78,7 @@ reales (aún no configurados). No se promete invulnerabilidad: estos son los con
 | Pruebas unitarias (`npm test`) | 80/80: validación, manipulación de campos, destinatario inyectado, idempotencia, doble envío, límites, fallos y timeouts del proveedor, configuración ausente, almacenamiento caído, logs sin datos personales, firma y callbacks |
 | Pruebas E2E (`npm run test:e2e`, Chromium) | 37/37: incluye CSP sin violaciones, bundle sin secretos, estados del formulario y rutas directas |
 | Headers en `vite preview` (réplica de `vercel.json`) | CSP, nosniff, referrer, permisos, X-Frame-Options y COOP presentes en landing; 404 con estado 404 |
-| `npm audit` (todas y solo producción) | 0 vulnerabilidades. No se usó `npm audit fix --force` |
+| `npm audit` (17 nov 2026) | Árbol completo: 6 alertas altas abiertas (ver riesgo 6), de 12 al inicio. Solo producción (`--omit=dev`): 0. No se usó `npm audit fix --force` |
 | ESLint | Sin errores |
 | Búsqueda de secretos en el árbol versionable | Sin coincidencias (SIDs, llaves privadas, tokens) |
 | `dist/` | Sin variables privadas ni sourcemaps |
@@ -92,6 +102,12 @@ reales (aún no configurados). No se promete invulnerabilidad: estos son los con
    sitio lo indica como demostración.
 7. **Aviso de privacidad en borrador** (sin datos del responsable ni revisión legal).
 8. **Navegadores**: las pruebas automatizadas usan Chromium; falta verificar Safari (iOS) y Firefox.
+9. **Alertas de `npm audit` abiertas (solo desarrollo, 17 nov 2026)**: picomatch ≤ 4.0.7 (ReDoS con globs
+   `+(*)`, GHSA-fc5q-39xc-vjpf; sin versión corregida publicada) y, por dependencia, fdir, tinyglobby, vite,
+   `@vitejs/plugin-react` y vitest. Son herramientas de compilación y pruebas: no viajan en `dist/` ni se
+   ejecutan en las funciones de Vercel (`npm audit --omit=dev` da 0), y solo procesan globs del propio
+   proyecto. `npm audit fix --force` propone bajar Vite a 6.2.7 (cambio incompatible), por eso no se aplicó.
+   Revisar de nuevo cuando picomatch publique una versión posterior a 4.0.7.
 
 ## Configuración externa faltante
 

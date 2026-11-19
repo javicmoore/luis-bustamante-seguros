@@ -32,6 +32,34 @@ describe('cliente REST de Upstash', () => {
     ]);
   });
 
+  it('reserva cupo con un script atómico todo o nada y traduce el resultado', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(ok({ result: 0 })).mockResolvedValueOnce(ok({ result: 3 }));
+    const store = createUpstashStore({ url: 'https://d.io', token: 't', fetchImpl });
+    const entries = [
+      { key: 'a', ttl: 600, limit: 5 },
+      { key: 'b', ttl: 86400, limit: 20 },
+      { key: 'c', ttl: 86400, limit: 3 },
+    ];
+    expect(await store.reserve(entries)).toEqual({ ok: true });
+    const cmd = JSON.parse(fetchImpl.mock.calls[0][1].body);
+    expect(cmd[0]).toBe('EVAL');
+    expect(cmd.slice(2)).toEqual(['3', 'a', 'b', 'c', '3', '5', '20', '3', '600', '86400', '86400']);
+    // Con marca: la llave va al final de KEYS y su valor y expiración al final de ARGV.
+    expect(await store.reserve(entries, { key: 'idem:k', value: '{"reserved":true}', ttl: 86400 })).toEqual({ ok: false, index: 2 });
+    const marked = JSON.parse(fetchImpl.mock.calls[1][1].body);
+    expect(marked.slice(2)).toEqual(['4', 'a', 'b', 'c', 'idem:k', '3', '5', '20', '3', '600', '86400', '86400', '{"reserved":true}', '86400']);
+  });
+
+  it('reclama una llave con un reemplazo condicional atómico', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(ok({ result: 1 })).mockResolvedValueOnce(ok({ result: 0 }));
+    const store = createUpstashStore({ url: 'https://d.io', token: 't', fetchImpl });
+    expect(await store.replaceIfEqual('idem:k', 'viejo', 'nuevo', 86400)).toBe(true);
+    const cmd = JSON.parse(fetchImpl.mock.calls[0][1].body);
+    expect(cmd[0]).toBe('EVAL');
+    expect(cmd.slice(2)).toEqual(['1', 'idem:k', 'viejo', 'nuevo', '86400']);
+    expect(await store.replaceIfEqual('idem:k', 'viejo', 'nuevo', 86400)).toBe(false);
+  });
+
   it('convierte errores HTTP, de comando y timeouts en StoreError', async () => {
     const http = createUpstashStore({ url: 'https://d.io', token: 't', fetchImpl: vi.fn().mockResolvedValue(new Response('', { status: 401 })) });
     await expect(http.get('k')).rejects.toBeInstanceOf(StoreError);

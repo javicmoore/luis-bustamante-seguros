@@ -32,6 +32,13 @@ export function createMemoryStore({ now = () => Date.now() } = {}) {
     async del(key) {
       data.delete(key);
     },
+    // Sin esperas internas: comparar y escribir ocurre sin que otra solicitud se intercale.
+    async replaceIfEqual(key, expected, value, ttlSec) {
+      const entry = alive(key);
+      if (!entry || entry.value !== expected) return false;
+      data.set(key, { value: String(value), expiresAt: expiry(ttlSec) });
+      return true;
+    },
     async incrMany(entries) {
       return entries.map(({ key, ttl }) => {
         const entry = alive(key);
@@ -43,6 +50,22 @@ export function createMemoryStore({ now = () => Date.now() } = {}) {
         entry.value = String(next);
         return next;
       });
+    },
+    // Todo o nada y sin esperas internas: no se intercalan otras solicitudes (como el script Lua).
+    async reserve(entries, mark) {
+      const counts = entries.map(({ key }) => {
+        const entry = alive(key);
+        return entry ? Number(entry.value) : 0;
+      });
+      const blocked = entries.findIndex(({ limit }, i) => counts[i] >= limit);
+      if (blocked !== -1) return { ok: false, index: blocked };
+      entries.forEach(({ key, ttl }, i) => {
+        const entry = alive(key);
+        if (entry) entry.value = String(counts[i] + 1);
+        else data.set(key, { value: '1', expiresAt: expiry(ttl) });
+      });
+      if (mark) data.set(mark.key, { value: String(mark.value), expiresAt: expiry(mark.ttl) });
+      return { ok: true };
     },
     async createLead(key, fields, ttlSec) {
       if (alive(key)) return false;
