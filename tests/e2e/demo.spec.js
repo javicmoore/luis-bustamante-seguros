@@ -18,25 +18,44 @@ test.describe('despliegue de demostración', () => {
     }
   });
 
-  test('el formulario valida pero no envía nada ni simula recepción', async ({ page }) => {
+  test('el formulario valida y muestra la vista previa del mensaje, sin abrir WhatsApp ni llamar a la API', async ({ page }) => {
     let requests = 0;
     page.on('request', (r) => r.url().includes('/api/') && (requests += 1));
+    await page.addInitScript(() => {
+      window.__opened = [];
+      window.open = (url) => window.__opened.push(String(url));
+    });
+    await page.route(/wa\.me|api\.whatsapp\.com/, (route) => route.abort());
     await open(page, '/#asesoria');
-    await expect(page.locator('.lead-form__demo')).toBeVisible();
-    await page.getByRole('button', { name: 'Cotizar mi plan de ahorro' }).click();
+    await expect(page.locator('.lead-form__demo')).toContainText('no se abrirá WhatsApp');
+    await page.getByRole('button', { name: 'Enviar por WhatsApp' }).click();
     await expect(page.locator('.lead-summary')).toBeVisible();
     await page.locator('#lead-name').fill('Prueba Ficticia');
     await page.locator('#lead-age').fill('40');
-    await page.locator('label.choice__option').filter({ hasText: /^Teléfono$/ }).click();
-    await page.locator('#lead-phone').fill('686 000 0042');
+    await page.locator('label.choice__option').filter({ hasText: /^Correo electrónico$/ }).click();
+    await page.locator('#lead-email').fill('prueba@ejemplo.com');
     await page.locator('label.choice__option').filter({ hasText: /^\$50,000 o más$/ }).click();
     await page.locator('label.consent__label').click();
-    await page.getByRole('button', { name: 'Cotizar mi plan de ahorro' }).click();
-    const result = page.locator('.lead-result');
-    await expect(result).toContainText('no se envió nada');
-    await expect(result).toContainText('Luis no recibió ninguna solicitud');
-    await expect(result).not.toContainText('fue recibida');
-    await expect(result.locator('.lead-result__folio')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Enviar por WhatsApp' }).click();
+    const preview = page.locator('.lead-handoff--demo');
+    await expect(preview).toBeVisible();
+    await expect(preview).toContainText('no se abrió WhatsApp');
+    await expect(preview.locator('.lead-handoff__message')).toHaveText(
+      [
+        'Hola Luis, vengo de tu página y me interesa cotizar un plan de ahorro.',
+        '',
+        'Nombre: Prueba Ficticia',
+        'Edad: 40 años',
+        'Ingresos mensuales: $50,000 MXN o más',
+        'Medio de contacto preferido: Correo electrónico',
+        'Correo: prueba@ejemplo.com',
+        '',
+        'Prefiero que me respondas por correo electrónico, aunque te envío esta solicitud por WhatsApp.',
+      ].join('\n'),
+    );
+    await expect(preview.locator('a')).toHaveCount(0);
+    await expect(page.locator('#asesoria')).not.toContainText(/solicitud (fue )?(enviada|recibida)/i);
+    expect(await page.evaluate(() => window.__opened)).toEqual([]);
     expect(requests).toBe(0);
   });
 

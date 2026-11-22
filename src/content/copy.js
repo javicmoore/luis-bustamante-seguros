@@ -65,7 +65,7 @@ export const formCopy = {
   eyebrow: 'Solicita tu asesoría',
   title: 'Formulario para el plan de ahorro',
   intro:
-    'Comparte tus datos y Luis podrá ponerse en contacto contigo para conocer lo que necesitas.',
+    'Llena tus datos y se abrirá WhatsApp con un mensaje para Luis, listo para que lo revises y lo envíes.',
   points: [
     'Cotización y asesoría gratuitas.',
     'Desde Mexicali, para personas de todo México.',
@@ -90,10 +90,10 @@ export const formCopy = {
     phone: 'Autorizo que Luis Bustamante me contacte por llamada o WhatsApp para dar seguimiento a esta solicitud.',
   },
   privacyShort:
-    'Tus datos se usan solo para atender esta solicitud. No se comparten para publicidad ni se usan para otras campañas.',
+    'Esta página no guarda tus datos: solo los usa para preparar tu mensaje de WhatsApp, que tú decides enviar. No se comparten para publicidad.',
   privacyLink: 'Leer el aviso de privacidad',
-  submit: 'Cotizar mi plan de ahorro',
-  submitting: 'Enviando tu solicitud…',
+  submit: 'Enviar por WhatsApp',
+  submitNote: 'Se abrirá WhatsApp con tu mensaje listo. Podrás revisarlo antes de enviarlo.',
 };
 
 export const servicesCopy = {

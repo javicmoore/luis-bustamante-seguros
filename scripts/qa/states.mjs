@@ -15,11 +15,13 @@ async function open(page, path) {
   await page.waitForTimeout(900);
 }
 
+// Datos ficticios.
 async function fill(page) {
   await page.locator('#lead-name').fill('Prueba Ficticia');
   await page.locator('#lead-age').fill('41');
+  await page.locator('label.choice__option', { hasText: 'Teléfono' }).click();
   await page.locator('#lead-phone').fill('686 000 0042');
-  await page.locator('label.choice__option', { hasText: 'Sí' }).click();
+  await page.locator('label.choice__option', { hasText: '$50,000 o más' }).click();
   await page.locator('label.consent__label').click();
 }
 
@@ -36,31 +38,25 @@ const desktop = { viewport: { width: 1366, height: 768 } };
   await page.close();
 }
 
-// Formulario: errores, éxito, fallo (móvil y escritorio)
+// Formulario: errores y nota tras preparar el mensaje (móvil y escritorio). WhatsApp no se abre:
+// window.open se reemplaza y cualquier petición a wa.me se bloquea.
 for (const [tag, ctx] of [['mobile', mobile], ['desktop', desktop]]) {
   const page = await browser.newPage(ctx);
+  await page.addInitScript(() => {
+    window.open = () => null;
+  });
+  await page.route(/wa\.me|api\.whatsapp\.com/, (route) => route.abort());
   await open(page, '/');
   const form = page.locator('#asesoria .request__card');
   await form.scrollIntoViewIfNeeded();
-  await page.getByRole('button', { name: 'Cotizar mi plan de ahorro' }).click();
+  await page.getByRole('button', { name: 'Enviar por WhatsApp' }).click();
   await page.waitForTimeout(400);
   await form.screenshot({ path: `${out}/${tag}-form-errors.png` });
 
-  await page.route('**/api/leads', (route) =>
-    route.fulfill({ status: 502, contentType: 'application/json', body: '{"ok":false,"error":"notification_failed","id":"LB-AAAAAAAA"}' }),
-  );
   await fill(page);
-  await page.getByRole('button', { name: 'Cotizar mi plan de ahorro' }).click();
+  await page.getByRole('button', { name: 'Enviar por WhatsApp' }).click();
   await page.waitForTimeout(500);
-  await form.screenshot({ path: `${out}/${tag}-form-failure.png` });
-
-  await page.unroute('**/api/leads');
-  await page.route('**/api/leads', (route) =>
-    route.fulfill({ status: 201, contentType: 'application/json', body: '{"ok":true,"status":"received","id":"LB-7K3M9QX2","notification":"accepted","demo":true}' }),
-  );
-  await page.getByRole('button', { name: 'Reintentar envío' }).click();
-  await page.waitForTimeout(700);
-  await form.screenshot({ path: `${out}/${tag}-form-success.png` });
+  await form.screenshot({ path: `${out}/${tag}-form-whatsapp.png` });
   await page.close();
 }
 

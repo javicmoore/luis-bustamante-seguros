@@ -1,12 +1,17 @@
 import { expect, test } from '@playwright/test';
 import { open } from './utils.js';
 
-// Datos ficticios. El servidor de pruebas usa el proveedor simulado: no se envía nada real.
+// Datos ficticios. La apertura de WhatsApp se intercepta: nunca se abre wa.me ni se envía nada real.
 const FAKE = { name: 'Prueba Ficticia', age: '41', phone: '686 000 0042', email: 'prueba@ejemplo.com' };
+const LUIS_CHAT = 'https://wa.me/526863872193?text=';
+const GREETING = 'Hola Luis, vengo de tu página y me interesa cotizar un plan de ahorro.';
 
 // Opción de radio por su texto exacto ("Auto" no debe coincidir con "Auto turista").
 const option = (page, text) => page.locator('label.choice__option').filter({ hasText: new RegExp(`^${text.replace(/[$()]/g, '\\$&')}$`) });
-const submit = (page) => page.getByRole('button', { name: 'Cotizar mi plan de ahorro' }).click();
+const submit = (page) => page.getByRole('button', { name: 'Enviar por WhatsApp' }).click();
+// URLs que la página intentó abrir con window.open (interceptado en beforeEach).
+const opened = (page) => page.evaluate(() => window.__opened);
+const textOf = (url) => new URL(url).searchParams.get('text');
 // Espera a que el desplazamiento suave termine (scrollY sin cambios durante varios cuadros).
 const settleScroll = (page) =>
   page.evaluate(
@@ -36,26 +41,46 @@ async function fillValid(page, overrides = {}) {
     if (data.country) await page.locator('#lead-phoneCountry').selectOption(data.country);
     await page.locator('#lead-phone').fill(data.phone);
   }
+  // El campo de contacto se despliega en 0.38 s y empuja las opciones de ingresos: se elige cuando terminó,
+  // como haría una persona (en WebKit un clic durante el movimiento puede no registrarse).
+  await page.waitForFunction(() => {
+    const box = document.querySelector('.interest.is-open');
+    const inner = box?.querySelector('.interest__inner');
+    return Boolean(inner) && Math.abs(box.getBoundingClientRect().height - inner.scrollHeight) < 1;
+  });
   await option(page, 'De $30,000 a menos de $50,000').click();
+  await expect(page.locator('input[name="income"][value="30_50"]')).toBeChecked();
   await page.locator('label.consent__label').click();
 }
 
-const captureLead = async (page) => {
-  const seen = { body: null };
-  await page.route('**/api/leads', async (route) => {
-    seen.body = route.request().postDataJSON();
-    await route.fulfill({
-      status: 201,
-      contentType: 'application/json',
-      body: JSON.stringify({ ok: true, status: 'received', id: 'LB-DDDDDDDD', notification: 'accepted' }),
-    });
+// Peticiones a la API del sitio: este flujo no debe hacer ninguna.
+const apiRequests = new WeakMap();
+
+async function guardPage(page) {
+  await page.addInitScript(() => {
+    window.__opened = [];
+    window.open = (url, target, features) => {
+      window.__opened.push({ url: String(url), target, features });
+      return null;
+    };
   });
-  return seen;
-};
+  // Red de seguridad: aunque algo abriera wa.me, la petición no sale.
+  await page.route(/wa\.me|api\.whatsapp\.com/, (route) => route.abort());
+  const seen = [];
+  apiRequests.set(page, seen);
+  page.on('request', (r) => {
+    if (new URL(r.url()).pathname.startsWith('/api/')) seen.push(r.url());
+  });
+}
 
 test.describe('formulario de asesoría', () => {
   test.beforeEach(async ({ page }) => {
+    await guardPage(page);
     await open(page, '/#asesoria');
+  });
+
+  test.afterEach(async ({ page }) => {
+    expect(apiRequests.get(page)).toEqual([]);
   });
 
   test('envío vacío: resumen de errores enfocado y errores junto a cada campo', async ({ page }) => {
@@ -126,7 +151,9 @@ test.describe('formulario de asesoría', () => {
     await expect(country).toHaveValue('MX');
     await expect(phone).toHaveValue('6860000042');
     // Los prefijos de otros países se reconocen cuando la librería (carga diferida) ya llegó.
+    // Se vacía antes de cada intento: reescribir el mismo texto no dispara el cambio en el campo.
     await expect(async () => {
+      await phone.fill('');
       await phone.fill('+34 612 345 678');
       await expect(country).toHaveValue('ES', { timeout: 1000 });
     }).toPass({ timeout: 15000 });
@@ -161,161 +188,165 @@ test.describe('formulario de asesoría', () => {
     await expect(page.locator('#lead-income-error')).toHaveCount(0);
   });
 
-  test('con los campos conservados la solicitud se envía', async ({ page }) => {
-    const seen = await captureLead(page);
-    await fillValid(page);
-    await submit(page);
-    await expect(page.locator('.lead-summary')).toHaveCount(0);
-    await expect(page.locator('.lead-result')).toBeVisible();
-    expect(seen.body).toMatchObject({ name: FAKE.name, age: FAKE.age, contactMethod: 'phone', phoneCountry: 'MX', phone: FAKE.phone, income: '30_50', consent: true });
+  test('botón "Enviar por WhatsApp" con la explicación debajo', async ({ page }) => {
+    const button = page.locator('.lead-form__submit');
+    await expect(button).toHaveText('Enviar por WhatsApp');
+    await expect(page.locator('#lead-submit-note')).toHaveText(
+      'Se abrirá WhatsApp con tu mensaje listo. Podrás revisarlo antes de enviarlo.',
+    );
+    await expect(button).toHaveAttribute('aria-describedby', 'lead-submit-note');
+    await expect(page.locator('#lead-title')).toHaveText('Formulario para el plan de ahorro');
+    await expect(page.locator('#asesoria form')).not.toHaveAttribute('action', /./);
   });
 
-  test('envía solo los campos del medio elegido (correo)', async ({ page }) => {
-    const seen = await captureLead(page);
+  test('por teléfono: abre el chat de Luis con el mensaje y conserva los campos', async ({ page }) => {
+    await fillValid(page);
+    await submit(page);
+    const calls = await opened(page);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url.startsWith(LUIS_CHAT)).toBe(true);
+    expect(calls[0].target).toBe('_blank');
+    expect(calls[0].features).toContain('noopener');
+    expect(textOf(calls[0].url)).toBe(
+      [
+        GREETING,
+        '',
+        'Nombre: Prueba Ficticia',
+        'Edad: 41 años',
+        'Ingresos mensuales: De $30,000 a menos de $50,000 MXN',
+        'Medio de contacto preferido: Teléfono (llamada o WhatsApp)',
+        'Teléfono: +52 686 000 0042',
+      ].join('\n'),
+    );
+
+    // Nota honesta: no afirma que se haya enviado; ofrece abrir de nuevo el mismo chat.
+    const note = page.locator('.lead-handoff');
+    await expect(note).toBeVisible();
+    await expect(note).toBeFocused();
+    await expect(note).toHaveAttribute('role', 'status');
+    await expect(note).toContainText('Abrimos WhatsApp con tu mensaje para Luis.');
+    await expect(page.locator('#asesoria')).not.toContainText(/solicitud (fue )?(enviada|recibida)|quedó registrada|folio/i);
+    await expect(note.getByRole('link', { name: /Abrir WhatsApp/ })).toHaveAttribute('href', calls[0].url);
+
+    // Los campos siguen llenos.
+    await expect(page.locator('#lead-name')).toHaveValue(FAKE.name);
+    await expect(page.locator('#lead-age')).toHaveValue(FAKE.age);
+    await expect(page.locator('input[name="contactMethod"][value="phone"]')).toBeChecked();
+    await expect(page.locator('#lead-phoneCountry')).toHaveValue('MX');
+    await expect(page.locator('#lead-phone')).toHaveValue(FAKE.phone);
+    await expect(page.locator('input[name="income"][value="30_50"]')).toBeChecked();
+    await expect(page.locator('#lead-consent')).toBeChecked();
+  });
+
+  test('por correo: incluye el correo y la preferencia de respuesta por correo, sin teléfono', async ({ page }) => {
     await fillValid(page, { method: 'email' });
     await submit(page);
-    await expect(page.locator('.lead-result')).toBeVisible();
-    expect(seen.body).toMatchObject({ contactMethod: 'email', email: FAKE.email, income: '30_50', consent: true });
-    expect(Object.keys(seen.body).sort()).toEqual(['age', 'consent', 'contactMethod', 'email', 'income', 'name', 'website']);
+    const [call] = await opened(page);
+    const text = textOf(call.url);
+    expect(text).toBe(
+      [
+        GREETING,
+        '',
+        'Nombre: Prueba Ficticia',
+        'Edad: 41 años',
+        'Ingresos mensuales: De $30,000 a menos de $50,000 MXN',
+        'Medio de contacto preferido: Correo electrónico',
+        'Correo: prueba@ejemplo.com',
+        '',
+        'Prefiero que me respondas por correo electrónico, aunque te envío esta solicitud por WhatsApp.',
+      ].join('\n'),
+    );
+    expect(text).not.toMatch(/Teléfono:|\+52/);
   });
 
-  test('envía solo los campos del medio elegido (teléfono extranjero)', async ({ page }) => {
-    const seen = await captureLead(page);
+  test('teléfono de otro país: número completo con su prefijo, sin correo', async ({ page }) => {
     await fillValid(page, { country: 'ES', phone: '612 345 678' });
     await submit(page);
-    await expect(page.locator('.lead-result')).toBeVisible();
-    expect(seen.body).toMatchObject({ contactMethod: 'phone', phoneCountry: 'ES', phone: '612 345 678' });
-    expect(Object.keys(seen.body).sort()).toEqual(['age', 'consent', 'contactMethod', 'income', 'name', 'phone', 'phoneCountry', 'website']);
+    const text = textOf((await opened(page))[0].url);
+    expect(text).toContain('Teléfono: +34 612 34 56 78');
+    expect(text).not.toMatch(/Correo|@/);
   });
 
-  test('la autorización empieza sin marcar y sin ella no se envía', async ({ page }) => {
-    await expect(page.locator('#lead-consent')).not.toBeChecked();
+  test('acentos, eñes y saltos de línea viajan bien codificados', async ({ page }) => {
+    await fillValid(page, { name: 'José Ñúñez Peña' });
+    await submit(page);
+    const { url } = (await opened(page))[0];
+    const query = url.slice(LUIS_CHAT.length);
+    expect(query).toContain('%0A');
+    expect(query).toContain('Jos%C3%A9%20%C3%91%C3%BA%C3%B1ez%20Pe%C3%B1a');
+    expect(query).not.toMatch(/[\s#&?ñáéíóúÑ]/);
+    expect(decodeURIComponent(query).split('\n')[2]).toBe('Nombre: José Ñúñez Peña');
+  });
+
+  test('con errores no se abre el chat', async ({ page }) => {
+    await submit(page);
+    await expect(page.locator('.lead-summary')).toBeVisible();
+
     await fillValid(page);
+    await page.locator('#lead-phone').fill('686 000 004');
+    await submit(page);
+    await expect(page.locator('#lead-phone-error')).toBeVisible();
+
+    await page.locator('#lead-phone').fill(FAKE.phone);
     await page.locator('label.consent__label').click();
-    let posted = 0;
-    page.on('request', (r) => r.url().includes('/api/leads') && (posted += 1));
     await submit(page);
     await expect(page.locator('#lead-consent-error')).toBeVisible();
-    expect(posted).toBe(0);
+
+    await page.locator('label.consent__label').click();
+    await page.locator('#lead-age').fill('17');
+    await submit(page);
+    await expect(page.locator('#lead-age-error')).toBeVisible();
+
+    expect(await opened(page)).toEqual([]);
+    await expect(page.locator('.lead-handoff')).toHaveCount(0);
   });
 
-  for (const method of ['phone', 'email']) {
-    test(`envío válido por ${method === 'email' ? 'correo' : 'teléfono'}: recibido con folio (proveedor simulado)`, async ({ page }) => {
-      // Cada corrida simula un visitante distinto (IP y dato de contacto) para no chocar con los
-      // límites de uso del servidor de pruebas, que siguen activos.
-      const ip = `198.51.100.${Math.floor(Math.random() * 250) + 1}`;
-      await page.route('**/api/leads', (route) => route.continue({ headers: { ...route.request().headers(), 'x-real-ip': ip } }));
-      const n = String(Math.floor(Math.random() * 9000) + 1000);
-      const conversions = [];
-      await page.exposeFunction('__conv', (d) => conversions.push(d));
-      await page.evaluate(() => window.addEventListener('lb:analytics', (e) => window.__conv(e.detail)));
-      await fillValid(page, { method, phone: `686 ${n.slice(0, 3)} ${n}`, email: `prueba${n}@ejemplo.com` });
-      await submit(page);
-      const result = page.locator('.lead-result');
-      await expect(result).toBeVisible();
-      await expect(result).toBeFocused();
-      await expect(result.getByRole('heading')).toHaveText('Tu solicitud fue recibida.');
-      await expect(result).toContainText(method === 'email' ? 'Luis podrá responderte al correo que compartiste.' : 'Luis podrá contactarte al teléfono que compartiste.');
-      await expect(result.locator('.lead-result__folio strong')).toHaveText(/^LB-[0-9A-Z]{8}$/);
-      await expect(result.locator('.lead-result__demo')).toContainText('Modo demostración');
-      expect(conversions.map((c) => c.event)).toEqual(['lead_form_attempt', 'lead_submitted']);
-      // Ningún evento lleva datos personales.
-      expect(JSON.stringify(conversions)).not.toMatch(/Prueba|686|41|198.51|ejemplo|30_50|30,000|auto/i);
-    });
-  }
-
-  test('doble clic: una sola solicitud', async ({ page }) => {
-    let posted = 0;
-    await page.route('**/api/leads', async (route) => {
-      posted += 1;
-      await new Promise((r) => setTimeout(r, 700));
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify({ ok: true, status: 'received', id: 'LB-AAAAAAAA', notification: 'accepted' }),
-      });
-    });
-    await fillValid(page);
-    await page.getByRole('button', { name: 'Cotizar mi plan de ahorro' }).dblclick();
-    await page.locator('.lead-form__submit').click({ force: true }).catch(() => {});
-    await expect(page.locator('.lead-result')).toBeVisible();
-    expect(posted).toBe(1);
+  test('con correo inválido o sin autorización (por correo) no se abre el chat', async ({ page }) => {
+    await fillValid(page, { method: 'email' });
+    await page.locator('#lead-email').fill('prueba@ejemplo');
+    const consent = page.locator('#lead-consent');
+    // Con errores, el foco va al resumen y la página se desplaza: se hace clic cuando se detiene.
+    await submit(page);
+    await expect(page.locator('#lead-email-error')).toBeVisible();
+    await settleScroll(page);
+    await page.locator('#lead-email').fill(FAKE.email);
+    await page.locator('label.consent__label').click();
+    await expect(consent).not.toBeChecked();
+    await submit(page);
+    await expect(page.locator('#lead-consent-error')).toBeVisible();
+    expect(await opened(page)).toEqual([]);
+    await settleScroll(page);
+    await page.locator('label.consent__label').click();
+    await expect(consent).toBeChecked();
+    await page.locator('.lead-form__submit').scrollIntoViewIfNeeded();
+    await settleScroll(page);
+    await submit(page);
+    expect(await opened(page)).toHaveLength(1);
   });
 
-  test('fallo del proveedor: conserva los datos, ofrece reintento y contacto, sin falso éxito', async ({ page }) => {
-    const keys = [];
-    let calls = 0;
-    await page.route('**/api/leads', async (route) => {
-      calls += 1;
-      keys.push(route.request().headers()['idempotency-key']);
-      if (calls === 1) {
-        await route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'notification_failed', id: 'LB-BBBBBBBB' }) });
-      } else {
-        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ok: true, status: 'received', id: 'LB-BBBBBBBB', notification: 'accepted' }) });
-      }
-    });
+  test('si cambia un dato después de abrir, el mensaje se vuelve a preparar con el dato nuevo', async ({ page }) => {
     await fillValid(page);
     await submit(page);
-    const alert = page.locator('.lead-alert');
-    await expect(alert).toBeVisible();
-    await expect(alert).toHaveAttribute('role', 'alert');
-    await expect(alert).toContainText('no pudo enviarse a Luis');
-    await expect(alert.locator('a[href="tel:+526863872193"]')).toBeVisible();
-    await expect(alert.locator('a[href="mailto:luis.bpaz@outlook.com"]')).toBeVisible();
-    await expect(page.locator('#lead-name')).toHaveValue(FAKE.name);
-    await expect(page.locator('#lead-consent')).toBeChecked();
-    await expect(page.locator('.lead-result')).toHaveCount(0);
-
-    await page.getByRole('button', { name: 'Reintentar envío' }).click();
-    await expect(page.locator('.lead-result')).toBeVisible();
-    // El reintento usa la misma llave de idempotencia (no duplica la solicitud).
-    expect(keys).toHaveLength(2);
-    expect(keys[0]).toBe(keys[1]);
-  });
-
-  test('cambiar los datos tras un fallo genera una llave nueva', async ({ page }) => {
-    const keys = [];
-    await page.route('**/api/leads', async (route) => {
-      keys.push(route.request().headers()['idempotency-key']);
-      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'unavailable' }) });
-    });
-    await fillValid(page);
-    await submit(page);
-    await expect(page.locator('.lead-alert')).toContainText('no está disponible');
+    await expect(page.locator('.lead-handoff')).toBeVisible();
     await page.locator('#lead-age').fill('42');
+    await expect(page.locator('.lead-handoff')).toHaveCount(0);
     await submit(page);
-    await expect(page.locator('.lead-alert')).toBeVisible();
-    expect(keys).toHaveLength(2);
-    expect(keys[0]).not.toBe(keys[1]);
+    const calls = await opened(page);
+    expect(calls).toHaveLength(2);
+    expect(textOf(calls[1].url)).toContain('Edad: 42 años');
   });
 
-  test('error de red, límite de uso y resultado incierto', async ({ page }) => {
-    await page.route('**/api/leads', (route) => route.abort('failed'));
-    await fillValid(page);
+  test('no se emiten eventos de analítica ni se guardan datos en el navegador', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__events = [];
+      window.addEventListener('lb:analytics', (e) => window.__events.push(e.detail));
+    });
+    await fillValid(page, { method: 'email' });
     await submit(page);
-    await expect(page.locator('.lead-alert')).toContainText('No pudimos conectar con el servidor.');
-
-    await page.unroute('**/api/leads');
-    await page.route('**/api/leads', (route) =>
-      route.fulfill({ status: 429, headers: { 'retry-after': '120' }, contentType: 'application/json', body: '{"ok":false,"error":"rate_limited"}' }),
-    );
-    await page.getByRole('button', { name: 'Reintentar envío' }).click();
-    await expect(page.locator('.lead-alert')).toContainText('varias solicitudes');
-
-    await page.unroute('**/api/leads');
-    await page.route('**/api/leads', (route) =>
-      route.fulfill({ status: 202, contentType: 'application/json', body: JSON.stringify({ ok: true, status: 'received', id: 'LB-CCCCCCCC', notification: 'pending' }) }),
-    );
-    await page.getByRole('button', { name: 'Reintentar envío' }).click();
-    await expect(page.locator('.lead-result')).toContainText('Tu solicitud quedó registrada.');
-  });
-
-  test('respuesta sin confirmación del servidor nunca se muestra como éxito', async ({ page }) => {
-    await page.route('**/api/leads', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html>proxy</html>' }));
-    await fillValid(page);
-    await submit(page);
-    await expect(page.locator('.lead-alert')).toBeVisible();
-    await expect(page.locator('.lead-result')).toHaveCount(0);
+    expect(await opened(page)).toHaveLength(1);
+    expect(await page.evaluate(() => window.__events)).toEqual([]);
+    const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }));
+    expect(stored).not.toMatch(/Prueba|ejemplo|41|30_50/);
   });
 
   test('el aviso de privacidad se abre sin perder lo escrito y describe los datos actuales', async ({ page }) => {

@@ -4,9 +4,8 @@
 const ALLOWED = {
   page_view: [],
   simulator_interaction: ['control'],
-  lead_form_attempt: [],
-  // Solo cuando el servidor registró la solicitud (201/202). Nunca al pulsar ni ante error.
-  lead_submitted: ['notification'],
+  // El formulario no registra eventos: prepara el mensaje de WhatsApp en el navegador y la página no
+  // puede saber si la persona lo envió, así que no hay conversión que medir ni datos que reportar.
 };
 
 export function track(name, props = {}) {
