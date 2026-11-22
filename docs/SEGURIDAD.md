@@ -1,123 +1,88 @@
 # Revisión de seguridad
 
-Fecha: 3 de octubre de 2026. Alcance: código del repositorio, build de producción servido localmente
-(`npm run preview:demo`) y pruebas automatizadas. **No** incluye el dominio final, Vercel, Twilio ni Upstash
-reales (aún no configurados). No se promete invulnerabilidad: estos son los controles aplicados y lo que falta.
+Actualizada el 21 de noviembre de 2026. Alcance: código del repositorio, build servido localmente
+(`npm run preview:demo`) y pruebas automatizadas. **No** incluye el dominio final. No se promete
+invulnerabilidad: estos son los controles aplicados y lo que falta.
+
+## Cómo funciona el formulario
+
+El sitio es estático: no tiene funciones de servidor, base de datos ni credenciales. Al pulsar
+**"Enviar por WhatsApp"**, el navegador valida los datos, arma el mensaje y abre
+`https://wa.me/526863872193?text=…` en una pestaña nueva. El mensaje **no se envía solo**: la persona lo revisa
+en WhatsApp y decide si lo manda. La página no puede saber si lo envió, así que nunca muestra "enviado".
+
+Se retiraron el 21 de noviembre de 2026 el envío automático y todo lo que lo sostenía: `/api/leads`,
+`/api/twilio-status`, el adaptador de Twilio, el almacenamiento en Upstash (registro, límites e idempotencia) y
+sus variables. Ya no aplican los controles de esa API (validación en servidor, límites por IP, cupo diario,
+firma de callbacks).
 
 ## Controles aplicados
 
+### Datos del formulario
+- Se preparan solo en el navegador: no hay petición a ningún servidor del sitio, no se guardan en
+  `localStorage` ni `sessionStorage` y no se emiten eventos de analítica (prueba E2E).
+- Validación compartida (`shared/lead-schema.js`): tipos, longitudes, rangos, opciones permitidas,
+  consentimiento marcado y limpieza de caracteres de control e invisibles. Con errores no se abre WhatsApp.
+- El mensaje lleva solo el dato del medio elegido (correo **o** teléfono) y se codifica con
+  `encodeURIComponent` (acentos, ñ, saltos de línea y signos como `&`, `#` o `+` no rompen la URL).
+- El destinatario es fijo (`site.whatsapp.href`); ningún campo del formulario puede cambiarlo.
+- Pestaña nueva con `noopener,noreferrer`: WhatsApp no recibe referencia a esta página.
+- Campo trampa (honeypot): si se llena, no se prepara ningún mensaje.
+- `SITE_MODE=demo`: no se abre WhatsApp; solo se muestra la vista previa del mensaje.
+
 ### Secretos y repositorio
-- Credenciales solo en variables privadas del servidor (`process.env` en `/api` y `backend/`); ninguna con
-  prefijo `VITE_`. `release-check` detiene el build si detecta una variable `VITE_*` con nombre de secreto.
+- No hay secretos que manejar. `release-check` detiene el build si encuentra una variable `VITE_*` con nombre
+  de secreto (terminaría en el navegador).
 - `.gitignore` excluye `.env*` (salvo `.env.example`), `.vercel/`, llaves y credenciales sueltas, originales
-  pesados (`media-originales/`), builds y reportes. Verificado con `git check-ignore` usando archivos ficticios.
-- `.env.example` sin valores reales. Git inicializado localmente **sin commits**; no hay historial que limpiar.
-- Build sin sourcemaps; el bundle del navegador no contiene nombres de variables privadas ni la URL de la API
-  de Twilio (prueba E2E y búsqueda en `dist/`).
+  pesados, builds y reportes. `.env.example` sin valores reales.
+- Build sin sourcemaps; prueba E2E de que el bundle no contiene nombres de variables privadas ni URLs de APIs de
+  terceros.
 
 ### Transporte y headers (`vercel.json`)
-- Páginas: CSP sin `unsafe-inline` ni `eval` (`default-src 'self'`; scripts, estilos, fuentes, imágenes,
-  conexiones y medios solo del propio origen; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`;
-  `frame-ancestors 'none'`; `upgrade-insecure-requests`), `X-Content-Type-Options: nosniff`,
+- Todas las rutas: CSP sin `unsafe-inline` ni `eval` (`default-src 'self'`; scripts, estilos, fuentes,
+  imágenes, conexiones y medios solo del propio origen; `object-src 'none'`; `base-uri 'self'`;
+  `form-action 'self'`; `frame-ancestors 'none'`; `upgrade-insecure-requests`), `X-Content-Type-Options: nosniff`,
   `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` restrictiva, `X-Frame-Options: DENY`,
   `Cross-Origin-Opener-Policy: same-origin`.
+- Abrir `wa.me` es una navegación a otra pestaña, no una conexión desde la página: no requiere relajar la CSP.
 - Inventario de recursos externos: **ninguno** (fuentes autoalojadas, sin CDNs, sin analítica, sin píxeles).
-  Excepción documentada: el bloque JSON-LD (`application/ld+json`) es un dato, no se ejecuta, y no requiere
-  relajar la CSP.
+  El bloque JSON-LD es un dato, no se ejecuta.
 - El HTML prerenderizado se valida en el build para que no contenga atributos `style` (compatibles con la CSP).
-- API: `Cache-Control: no-store`, `nosniff`, `Referrer-Policy: no-referrer`, CSP `default-src 'none'`.
-- HSTS: Vercel agrega por defecto `max-age=63072000` en dominios propios (sin `includeSubDomains` ni `preload`).
-  No se añadió nada más; activar `includeSubDomains`/`preload` requiere revisar subdominios y autorización.
+- HSTS: Vercel agrega por defecto `max-age=63072000` en dominios propios. No se añadió `includeSubDomains` ni
+  `preload` (requieren revisar subdominios y autorización).
+- Las rutas `/api/*` ya no existen: responden 404 (prueba E2E en el servidor local).
 
-### API `POST /api/leads`
-- Solo `POST` (405 con `Allow`), solo `application/json` (415), cuerpo máximo 2 KB (413, también sin
-  `Content-Length`), JSON inválido (400).
-- Validación estricta compartida (`shared/lead-schema.js`): tipos, longitudes, rangos, opciones permitidas,
-  consentimiento exactamente `true`, limpieza de caracteres de control/invisibles. Campos inesperados (p. ej.
-  `to`, `contentSid`) → 400. Destinatario, plantilla, remitente y credenciales nunca vienen del navegador.
-- Origen permitido (dominio configurado y URLs de Vercel; localhost/red privada solo fuera de producción) y
-  `Sec-Fetch-Site` como defensa adicional, **no** como autenticación.
-- Límites de uso en almacenamiento compartido (Upstash): 30 peticiones/10 min por IP (transacción
-  `MULTI/EXEC`); para solicitudes nuevas, 5/10 min y 20/día por IP, 3/día por teléfono y un tope global diario
-  (`LEAD_DAILY_CAP`). IP y teléfono se guardan como seudónimos HMAC con `LEAD_HASH_SECRET`.
-- Cupo de solicitudes nuevas: se reserva **todo o nada** con un script atómico (`EVAL`): si cualquier regla
-  rechaza la solicitud, ningún contador cambia, así que un rechazo por IP o por contacto no gasta el tope global.
-  La llave de idempotencia se reclama antes de reservar y se libera si hay rechazo; reintentar con la misma llave
-  (tras un fallo del proveedor o una respuesta repetida) no reserva otro lugar.
-  La reserva y la marca "ya reservó" en la llave de idempotencia se escriben en el mismo script: si la función
-  se interrumpe justo después, el reintento con la misma llave (pasados 60 s) no cobra otro lugar ni repite el
-  aviso. Una solicitud interrumpida se reclama con un reemplazo condicional atómico (solo si la llave sigue
-  igual a como se leyó): si llegan varios reintentos a la vez, uno solo continúa y los demás reciben 409. Si Redis
-  no confirma la reserva (p. ej. timeout), la llave se conserva para recuperarla pasados 60 s. **Pendiente:** ejecutar el script contra un Redis real o un Upstash exclusivo de pruebas; hasta ahora se
-  verificó con el almacenamiento en memoria y con el texto del script en un intérprete de Lua (no Redis).
-- Campo trampa (honeypot) → 400 genérico; nunca un éxito ficticio.
-- Idempotencia con llave UUID del navegador: reintentos sin duplicar, 409 mientras procesa, 422 si se reutiliza
-  la llave con otros datos, reintento tras fallo con el mismo folio, recuperación de ejecuciones interrumpidas.
-- Resultados honestos: 201 solo si el registro se guardó y Twilio aceptó; 202 si quedó registrado pero el aviso
-  es incierto (timeout/5xx; sin reenvío a ciegas); 502 si el proveedor rechazó; 503 ante configuración ausente
-  o almacenamiento caído. El navegador nunca muestra éxito por temporizador.
-- Sin datos personales en logs ni en respuestas (solo folio y códigos); las excepciones internas no se exponen.
-- Proveedor simulado solo fuera de producción; en producción se rechaza (503).
+### Indexación
+- Con `SITE_MODE=demo` (activo en Vercel): `noindex, nofollow` en todas las páginas y `robots.txt` con
+  `Disallow: /`, sin canonical ni sitemap.
+- El aviso de privacidad en borrador lleva `noindex` aunque se quite el modo demo.
 
-### Callback `POST /api/twilio-status`
-- Firma `X-Twilio-Signature` verificada con el Auth Token (comparación en tiempo constante; paridad probada
-  contra el SDK oficial), `AccountSid` verificado, repeticiones descartadas (`I-Twilio-Idempotency-Token`),
-  cuerpo máximo 16 KB, parámetros sin prototipo, estados que solo avanzan y control del SID del mensaje.
-
-### Frontend
-- Formulario: sin correo, ingresos ni datos médicos; autorización desmarcada al inicio; botón deshabilitado
-  hasta hidratar y `method="post"` para que un envío prematuro nunca ponga datos en la URL.
-- Eventos de medición sin datos personales (lista blanca de propiedades); la conversión solo se cuenta con
-  recepción real del servidor.
-- Enlaces externos con `rel="noopener noreferrer"`.
-
-## Comprobaciones realizadas (con evidencia)
+## Comprobaciones realizadas (con evidencia, 21 nov 2026)
 
 | Comprobación | Resultado |
 | --- | --- |
-| Pruebas unitarias (`npm test`) | 80/80: validación, manipulación de campos, destinatario inyectado, idempotencia, doble envío, límites, fallos y timeouts del proveedor, configuración ausente, almacenamiento caído, logs sin datos personales, firma y callbacks |
-| Pruebas E2E (`npm run test:e2e`, Chromium) | 37/37: incluye CSP sin violaciones, bundle sin secretos, estados del formulario y rutas directas |
-| Headers en `vite preview` (réplica de `vercel.json`) | CSP, nosniff, referrer, permisos, X-Frame-Options y COOP presentes en landing; 404 con estado 404 |
-| `npm audit` (17 nov 2026) | Árbol completo: 6 alertas altas abiertas (ver riesgo 6), de 12 al inicio. Solo producción (`--omit=dev`): 0. No se usó `npm audit fix --force` |
+| Pruebas unitarias (`npm test`) | Validación compartida, armado y codificación del mensaje, textos y simulador |
+| Pruebas E2E (Chromium y WebKit en emulación) | Formulario por correo y por teléfono, errores que impiden abrir el chat, cero peticiones a `/api/`, sin analítica ni datos guardados, rutas antiguas con 404, modo demo solo con vista previa |
+| `npm audit --omit=dev` | 0 vulnerabilidades |
+| `npm audit` (árbol completo) | 0 vulnerabilidades (21 nov 2026; sin `--force`) |
 | ESLint | Sin errores |
-| Búsqueda de secretos en el árbol versionable | Sin coincidencias (SIDs, llaves privadas, tokens) |
-| `dist/` | Sin variables privadas ni sourcemaps |
 
 ## Hallazgos pendientes y riesgos residuales
 
 1. **No verificado en el dominio final**: HTTPS, redirección desde HTTP, recursos mixtos y valores reales de
-   headers (incluido HSTS). Comprobar con `curl -I` en `/`, `/aviso-de-privacidad`, una ruta inexistente y
-   `/api/leads`.
-2. **Twilio y Upstash sin configurar**: sin prueba real de entrega ni del callback. El sitio **no debe recibir
-   prospectos reales** hasta completar la prueba autorizada.
-3. **Abuso distribuido**: los límites son por IP y teléfono más un tope global; un ataque desde muchas IP podría
-   agotar el tope diario (bloquea solicitudes, no genera costos ilimitados). Si aparece spam, agregar un
-   desafío (p. ej. Cloudflare Turnstile) con validación del token en el servidor.
-4. **Datos en Upstash**: el registro mínimo contiene datos personales durante 30 días. Proteger el acceso a la
-   consola (2FA, solo Javier), usar token de solo lectura para consultas y revisar las opciones de cifrado del
-   proveedor. No se agregó cifrado a nivel de aplicación.
-5. **Rotación de credenciales**: al rotar el Auth Token o la API Key, actualizar Vercel de inmediato (los
-   callbacks fallarían la verificación de firma con un token viejo).
-6. **Vistas previas de Vercel**: mantener *Deployment Protection*. Si se usa `LEAD_PROVIDER=mock` en Preview, el
-   sitio lo indica como demostración.
-7. **Aviso de privacidad en borrador** (sin datos del responsable ni revisión legal).
-8. **Navegadores**: las pruebas automatizadas usan Chromium; falta verificar Safari (iOS) y Firefox.
-9. **Alertas de `npm audit` abiertas (solo desarrollo, 17 nov 2026)**: picomatch ≤ 4.0.7 (ReDoS con globs
-   `+(*)`, GHSA-fc5q-39xc-vjpf; sin versión corregida publicada) y, por dependencia, fdir, tinyglobby, vite,
-   `@vitejs/plugin-react` y vitest. Son herramientas de compilación y pruebas: no viajan en `dist/` ni se
-   ejecutan en las funciones de Vercel (`npm audit --omit=dev` da 0), y solo procesan globs del propio
-   proyecto. `npm audit fix --force` propone bajar Vite a 6.2.7 (cambio incompatible), por eso no se aplicó.
-   Revisar de nuevo cuando picomatch publique una versión posterior a 4.0.7.
-
-## Configuración externa faltante
-
-Variables privadas de Twilio, Upstash, `LEAD_HASH_SECRET` y `SITE_URL` (ver `docs/WHATSAPP-TWILIO.md`), dominio
-con HTTPS, plantilla aprobada y aceptación de Luis, y Deployment Protection en vistas previas.
+   headers (incluido HSTS). Comprobar con `curl -I` en `/`, `/aviso-de-privacidad` y una ruta inexistente.
+2. **Teléfono físico**: abrir WhatsApp depende del dispositivo (app instalada o WhatsApp Web, bloqueador de
+   ventanas). Hay un enlace de respaldo "¿No se abrió? Abrir WhatsApp". Falta probarlo en iOS y Android.
+3. **Aviso de privacidad en borrador** (sin datos del responsable ni revisión legal).
+4. **Dependencias**: revisar `npm audit` periódicamente. Las alertas de picomatch (solo desarrollo) que
+   seguían abiertas el 17 nov 2026 ya no aparecen; no se usó `npm audit fix --force`.
+5. **Vistas previas de Vercel**: mantener *Deployment Protection*.
+6. **Variables antiguas en Vercel**: si alguna vez se cargaron credenciales de Twilio, Upstash o
+   `LEAD_HASH_SECRET` en el proyecto, borrarlas y revocarlas en cada proveedor; ya no se usan.
 
 ## Si un secreto se expone
 
-1. Detener el lanzamiento y avisar a Javier (sin pegar el secreto en chats ni tickets).
-2. Revocar/rotar en el proveedor (Twilio: API Key o Auth Token; Upstash: token) y actualizar Vercel.
-3. Si llegó a Git: `.gitignore` no lo elimina del historial. Rotar primero; reescribir historial compartido solo
-   con autorización.
-4. Revisar logs del proveedor por uso indebido.
+1. Avisar a Javier (sin pegar el secreto en chats ni tickets).
+2. Revocar o rotar en el proveedor y actualizar Vercel.
+3. Si llegó a Git: `.gitignore` no lo elimina del historial. Rotar primero; reescribir historial compartido
+   solo con autorización.

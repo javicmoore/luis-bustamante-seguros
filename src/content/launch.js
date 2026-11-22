@@ -8,26 +8,15 @@ export const launchChecklist = [
       'Constancia escrita de que Karla G., Sergio C. y Alberto G. autorizan publicar su testimonio con ese nombre y contexto (ver src/content/testimonials.js).',
   },
   {
-    id: 'plantilla-whatsapp-interes',
-    done: false,
-    label:
-      'Plantilla de WhatsApp de 7 variables (versión 4: encabezado general, medio de contacto, correo o teléfono e ingresos) aprobada en Twilio/Meta y su ContentSid cargado en TWILIO_CONTENT_SID (ver docs/WHATSAPP-TWILIO.md).',
-  },
-  {
-    id: 'whatsapp-prueba-autorizada',
-    done: false,
-    label:
-      'Prueba autorizada con datos ficticios: la notificación llegó al WhatsApp de Luis con la plantilla aprobada.',
-  },
-  {
-    id: 'callback-estado',
-    done: false,
-    label: 'El callback /api/twilio-status recibió estados firmados (sent/delivered/read) en el dominio final.',
-  },
-  {
     id: 'headers-dominio',
     done: false,
-    label: 'Headers reales (CSP, nosniff, referrer, permisos, frame-ancestors, HSTS) comprobados en landing, aviso, 404 y API.',
+    label: 'Headers reales (CSP, nosniff, referrer, permisos, frame-ancestors, HSTS) comprobados en landing, aviso y 404.',
+  },
+  {
+    id: 'indexacion',
+    done: false,
+    label:
+      'Indexación decidida para el lanzamiento: sin SITE_MODE=demo, el sitio pierde el noindex. Confirmar dominio, canonical, sitemap y robots.txt antes de quitarlo.',
   },
   {
     id: 'https-redireccion',
@@ -37,6 +26,7 @@ export const launchChecklist = [
   {
     id: 'telefono-fisico',
     done: false,
-    label: 'Recorrido completo probado en al menos un teléfono físico (iOS y/o Android).',
+    label:
+      'Recorrido completo probado en al menos un teléfono físico (iOS y/o Android), incluido el formulario: "Enviar por WhatsApp" abre el chat de Luis con el mensaje correcto, sin enviarlo solo, y al volver los datos siguen en el formulario.',
   },
 ];

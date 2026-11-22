@@ -750,6 +750,16 @@ test.describe('movimiento reducido', () => {
 });
 
 test.describe('seguridad del frontend', () => {
+  test('las rutas del envío automático retirado ya no existen', async ({ request }) => {
+    for (const path of ['/api/leads', '/api/twilio-status']) {
+      for (const method of ['get', 'post']) {
+        const res = await request[method](path, method === 'post' ? { data: { name: 'Prueba Ficticia' } } : undefined);
+        expect(res.status(), `${method.toUpperCase()} ${path}`).toBe(404);
+        expect(await res.text()).not.toMatch(/"ok"|rate_limited|notification|unavailable/);
+      }
+    }
+  });
+
   test('sin violaciones de CSP ni errores de consola en landing y aviso', async ({ page }) => {
     const problems = [];
     await page.addInitScript(() => {

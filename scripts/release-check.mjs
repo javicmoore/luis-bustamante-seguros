@@ -1,4 +1,4 @@
-// Revisión de lanzamiento: enumera pendientes que impiden recibir prospectos reales.
+// Revisión de lanzamiento: enumera pendientes antes de publicar el sitio definitivo.
 //
 //   npm run check:release          → reporte local; termina con código 1 si hay bloqueantes.
 //   node scripts/release-check.mjs --vercel
@@ -97,29 +97,15 @@ if (!existsSync(resolve(pub, 'og/og-default.png'))) warnings.push('Falta la imag
 else ok.push('Imagen social con logo y retrato reales (npm run brand:assets).');
 
 if (env.SITE_MODE && env.SITE_MODE !== 'demo') blockers.push('SITE_MODE solo admite "demo" (o no definirla).');
-if (env.SITE_MODE === 'demo' && !vercelMode) blockers.push('SITE_MODE=demo está activo: el formulario no envía solicitudes.');
+if (env.SITE_MODE === 'demo' && !vercelMode) {
+  blockers.push('SITE_MODE=demo está activo: el formulario solo muestra la vista previa del mensaje y todas las páginas llevan noindex.');
+}
 
-// --- Configuración del servidor (solo nombres, nunca valores) -----------------
+// --- Configuración del despliegue (solo nombres, nunca valores) -----------------
+// El formulario prepara el mensaje de WhatsApp en el navegador: no hay credenciales que exigir.
 const checkEnv = vercelMode || process.argv.includes('--env');
 if (checkEnv) {
-  const required = [
-    'TWILIO_ACCOUNT_SID',
-    'TWILIO_API_KEY',
-    'TWILIO_API_SECRET',
-    'TWILIO_AUTH_TOKEN',
-    'TWILIO_WHATSAPP_FROM',
-    'TWILIO_CONTENT_SID',
-    'LEAD_NOTIFICATION_TO',
-    'LEAD_HASH_SECRET',
-  ];
-  const missing = required.filter((k) => !env[k]);
-  if (!(env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL) || !(env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN)) {
-    missing.push('UPSTASH_REDIS_REST_URL/TOKEN (o KV_REST_API_URL/TOKEN)');
-  }
-  if (missing.length) blockers.push(`Variables privadas faltantes: ${missing.join(', ')}.`);
-  else ok.push('Variables privadas del servidor presentes.');
-  if ((env.LEAD_PROVIDER || 'twilio').toLowerCase() !== 'twilio') blockers.push('LEAD_PROVIDER debe ser "twilio" en producción.');
-  if (!env.SITE_URL) warnings.push('SITE_URL no definida: sin canonical, og:url, og:image absoluta, sitemap ni callback con dominio propio.');
+  if (!env.SITE_URL) warnings.push('SITE_URL no definida: sin canonical, og:url, og:image absoluta ni sitemap.');
   else if (!/^https:\/\//.test(env.SITE_URL)) blockers.push('SITE_URL debe usar https.');
   for (const key of Object.keys(env)) {
     if (key.startsWith('VITE_') && /(SECRET|TOKEN|KEY|PASSWORD|SID)/i.test(key)) {
@@ -151,15 +137,15 @@ if (blockers.length === 0) {
 }
 
 if (vercelMode) {
-  // Despliegue de demostración explícito: se publica para revisar el diseño, con el formulario
-  // desactivado en el navegador y en el servidor. No es el lanzamiento y no exime de los bloqueantes.
+  // Despliegue de demostración explícito: se publica para revisar el diseño; el formulario solo muestra la
+  // vista previa del mensaje y todo lleva noindex. No es el lanzamiento y no exime de los bloqueantes.
   if (env.SITE_MODE === 'demo') {
-    console.log('SITE_MODE=demo: despliegue de DEMOSTRACIÓN (formulario desactivado, noindex). Se continúa.');
+    console.log('SITE_MODE=demo: despliegue de DEMOSTRACIÓN (vista previa del mensaje, noindex). Se continúa.');
     console.log('Para el lanzamiento real, eliminar SITE_MODE y resolver los bloqueantes.');
     process.exit(0);
   }
   if (production && env.RELEASE_CHECK !== 'warn') {
-    console.error('Build de PRODUCCIÓN detenido: el sitio no está listo para recibir prospectos reales.');
+    console.error('Build de PRODUCCIÓN detenido: el sitio todavía tiene pendientes de lanzamiento.');
     console.error('Resuelve los bloqueantes o, como decisión explícita, define RELEASE_CHECK=warn en Vercel.');
     process.exit(1);
   }

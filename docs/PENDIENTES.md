@@ -55,7 +55,8 @@ Listados en `src/content/review.js` (cambiar `status` a `'aprobado'` cuando Luis
 - Párrafo sobre su forma de trabajar ("Sobre Luis").
 - Título del formulario, texto de autorización y nota breve de privacidad.
 - FAQ: atención a distancia por teléfono o WhatsApp; el costo del producto se revisa antes de decidir; qué pasa
-  al enviar el formulario; revisión de seguros o ahorros que ya se tienen; información sugerida.
+  al enviar el formulario (debe decir que se abre WhatsApp y el mensaje llega cuando la persona lo envía; hay
+  una propuesta sin publicar en el árbol de trabajo); revisión de seguros o ahorros que ya se tienen; información sugerida.
 
 Datos ya confirmados y usados: nombre, actividad, Mexicali, alcance nacional, teléfono/WhatsApp
 686 387 2193, Instagram, servicios y cotización/asesoría gratuitas.
@@ -67,30 +68,38 @@ Está en **borrador** (con marcas `[Pendiente: …]` visibles y `noindex`). En `
 - Nombre legal completo del responsable.
 - Domicilio para efectos del aviso.
 - Medio para ejercer derechos ARCO y revocar el consentimiento, con procedimiento y plazos.
-- Plazo de conservación una vez que Luis atiende la solicitud.
-- Confirmación de proveedores (Vercel, Upstash, Twilio) y revisión legal.
+- Plazo de conservación de las conversaciones de WhatsApp una vez que Luis atiende la solicitud.
+- Confirmación de proveedores (Vercel como alojamiento; WhatsApp/Meta para los mensajes) y revisión legal.
+
+El texto publicado todavía describe el envío retirado (registro en Upstash, aviso por Twilio, IP seudonimizada y
+conservación de 30 días). Hay una versión que describe el flujo de WhatsApp en el árbol de trabajo
+(`src/components/Privacy/PrivacyContent.jsx`), sin publicar hasta que Javier y Luis la aprueben junto con los
+datos de arriba.
 
 Al terminar: `status: 'final'` y `updatedAt: 'AAAA-MM-DD'`.
 
 ## 5. Configuración externa
 
-- **Dominio definitivo** → `SITE_URL=https://…` en Vercel (activa canonical, `og:url`, `og:image` absoluta,
-  sitemap y la URL del callback).
-- **Upstash Redis** desde Vercel Marketplace (crea `KV_REST_API_URL` y `KV_REST_API_TOKEN`).
-- **`LEAD_HASH_SECRET`**: cadena aleatoria de 32+ caracteres (ver `.env.example`).
-- **Twilio**: cuenta, remitente de WhatsApp, plantilla aprobada (versión 4, de 7 variables con encabezado
-  general "Nuevo prospecto"; no se ha creado ni aprobado), aceptación de Luis y credenciales. Guía completa en
-  `docs/WHATSAPP-TWILIO.md`.
+El formulario prepara el mensaje de WhatsApp en el navegador (flujo definitivo desde el 21 nov 2026): no hay
+servidor, almacenamiento ni credenciales que configurar. Se retiraron `/api/leads`, `/api/twilio-status`,
+Twilio y Upstash.
+
+- **Dominio definitivo** → `SITE_URL=https://…` en Vercel (activa canonical, `og:url`, `og:image` absoluta y
+  sitemap).
+- **Indexación**: hoy `SITE_MODE=demo` pone `noindex` en todo el sitio y `robots.txt` con `Disallow: /`.
+  Quitarlo solo para el lanzamiento, con el dominio, el aviso de privacidad final y los textos aprobados.
+- **Variables antiguas**: si en Vercel quedaron credenciales de Twilio o Upstash, borrarlas y revocarlas.
 - **Medición**: no se instaló ninguna herramienta. Si se decide usar una, ver "Medición" en el README.
 - **Colores**: acentos ajustados al logo real (cobre #C88040, azul acero #385870) sobre el azul #102A43.
 
-## 6. Verificaciones antes de recibir prospectos reales
+## 6. Verificaciones antes del lanzamiento
 
 Marcar en `src/content/launch.js` solo con evidencia:
 
-- [ ] Plantilla de WhatsApp v4 (7 variables, encabezado general) aprobada y su `HX…` en `TWILIO_CONTENT_SID`.
-- [ ] Prueba autorizada de WhatsApp con datos ficticios (plantilla aprobada, aviso recibido por Luis).
-- [ ] Callback de estado recibido y verificado en el dominio final.
-- [ ] Headers reales comprobados en landing, aviso, 404 y API (`curl -I https://dominio/…`).
+- [ ] Constancia escrita de los testimonios.
+- [ ] Headers reales comprobados en landing, aviso y 404 (`curl -I https://dominio/…`).
+- [ ] Indexación decidida: dominio, canonical, sitemap y `robots.txt` listos antes de quitar `SITE_MODE=demo`.
 - [ ] HTTPS y redirección desde HTTP en el dominio final.
-- [ ] Recorrido completo en al menos un teléfono físico (ver `docs/QA-RENDIMIENTO.md`).
+- [ ] Recorrido completo en al menos un teléfono físico (iOS y/o Android), incluido el formulario: "Enviar por
+  WhatsApp" abre el chat de Luis con el mensaje correcto, sin enviarlo solo, y al volver los datos siguen ahí
+  (ver `docs/QA-RENDIMIENTO.md`).

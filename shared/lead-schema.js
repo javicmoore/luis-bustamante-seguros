@@ -1,9 +1,9 @@
-// Esquema de la solicitud de asesoría, compartido por el formulario y el servidor.
-// El servidor vuelve a validar todo: el navegador nunca es fuente de confianza.
+// Esquema y validación de la solicitud de asesoría. Lo usa el formulario para preparar el mensaje de
+// WhatsApp en el navegador (no hay servidor que reciba la solicitud).
 import { COUNTRY_BY_CODE } from './countries.js';
 
 // Reglas telefónicas de otros países (libphonenumber-js). Se registran desde shared/phone-lib.js:
-// el servidor y las pruebas lo cargan al inicio; el navegador, solo cuando se usa el formulario
+// las pruebas lo cargan al inicio; el navegador, solo cuando se usa el formulario
 // (así sus metadatos no pesan en la carga inicial). México se valida sin la librería.
 let phoneLib = null;
 export function setPhoneLibrary(lib) {
@@ -20,8 +20,8 @@ export const LEAD_LIMITS = Object.freeze({
   emailMax: 254,
 });
 
-// Medio de contacto preferido. La solicitud siempre llega al WhatsApp de Luis; esto indica cómo
-// prefiere el visitante que Luis le responda. Solo se pide el dato del medio elegido.
+// Medio de contacto preferido. El mensaje siempre llega por WhatsApp; esto indica cómo prefiere el
+// visitante que Luis le responda. Solo se pide el dato del medio elegido.
 export const CONTACT_METHODS = Object.freeze([
   { value: 'email', label: 'Correo electrónico', notice: 'Correo electrónico' },
   { value: 'phone', label: 'Teléfono', notice: 'Teléfono (llamada o WhatsApp)' },
@@ -52,9 +52,6 @@ export const ALLOWED_FIELDS = Object.freeze([
   'consent',
   'website',
 ]);
-
-// Versión del texto de consentimiento que el visitante aceptó (cambia con el medio elegido).
-export const CONSENT_VERSION = '2026-10-21-borrador';
 
 const has = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 const blank = (value) => value === undefined || value === null || value === '';
@@ -146,7 +143,7 @@ function parseAge(raw) {
 /**
  * Valida y normaliza la solicitud.
  * @param {unknown} input
- * @param {{ strict?: boolean }} [options] strict: rechaza campos desconocidos (servidor).
+ * @param {{ strict?: boolean }} [options] strict: rechaza campos desconocidos.
  * @returns {{ ok: true, value: object } | { ok: false, errors: Record<string, string>, unexpected?: string[], honeypot?: boolean }}
  */
 export function validateLead(input, { strict = true } = {}) {
