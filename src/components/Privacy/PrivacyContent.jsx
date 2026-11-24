@@ -40,29 +40,33 @@ export function PrivacyContent({ headingLevel = 2 }) {
         medio. <Pending>revisión legal del tratamiento de datos patrimoniales</Pending>
       </p>
       <p>
-        Para prevenir el uso abusivo del formulario, el servidor procesa tu dirección IP de forma seudonimizada y
-        temporal (menos de 24 horas). Este sitio no instala herramientas de publicidad ni de seguimiento.
+        Este sitio no guarda ni envía a un servidor los datos del formulario, y no instala herramientas de publicidad ni
+        de seguimiento. Como cualquier sitio web, el proveedor de alojamiento puede procesar datos técnicos de la
+        conexión, como tu dirección IP. <Pending>confirmar con el proveedor de alojamiento</Pending>
       </p>
 
       <H>Finalidad</H>
       <p>
         Tus datos se usan únicamente para contactarte por el medio que elegiste (correo electrónico, o llamada o
-        WhatsApp) y dar seguimiento a la solicitud de asesoría que enviaste. No se usan para enviarte publicidad ni campañas y no se venden.
+        WhatsApp) y dar seguimiento a la solicitud de asesoría que le enviaste. No se usan para enviarte publicidad ni campañas y no se venden.
       </p>
 
       <H>Cómo se procesa tu solicitud</H>
       <p>
-        Al enviar el formulario, la solicitud se registra en un almacenamiento privado y se envía un aviso al WhatsApp
-        de Luis. Para ello intervienen proveedores tecnológicos que actúan por cuenta del responsable: Vercel
-        (alojamiento del sitio), Upstash (registro temporal de la solicitud) y Twilio (envío del aviso por WhatsApp).
-        Estos proveedores pueden procesar la información fuera de México. <Pending>confirmar proveedores y su
-        tratamiento antes del lanzamiento</Pending>
+        Al pulsar «Enviar por WhatsApp», tu navegador prepara un mensaje con los datos del formulario y abre WhatsApp
+        en una conversación con Luis. El mensaje no se envía solo: puedes revisarlo, cambiarlo o no enviarlo. Solo si
+        lo envías, le llega a Luis por WhatsApp, junto con tu número de WhatsApp.
+      </p>
+      <p>
+        WhatsApp es un servicio de Meta, con sus propios términos y aviso de privacidad, y puede procesar la
+        información fuera de México. El sitio se aloja en Vercel. <Pending>confirmar proveedores y su tratamiento
+        antes del lanzamiento</Pending>
       </p>
 
       <H>Conservación</H>
       <p>
-        El registro de tu solicitud en el sitio se conserva hasta {privacy.retentionDays} días y después se elimina
-        automáticamente. <Pending>plazo de conservación una vez que Luis atiende la solicitud</Pending>
+        Este sitio no conserva los datos del formulario. Los mensajes que le envíes a Luis se conservan en su
+        WhatsApp. <Pending>plazo de conservación de las conversaciones una vez que Luis atiende la solicitud</Pending>
       </p>
 
       <H>Transferencias</H>
@@ -79,7 +83,7 @@ export function PrivacyContent({ headingLevel = 2 }) {
 
       <H>Consentimiento</H>
       <p>
-        Al marcar la casilla de autorización y enviar el formulario, aceptas de forma expresa que {site.name} te
+        Al marcar la casilla de autorización y enviarle tu mensaje por WhatsApp, aceptas de forma expresa que {site.name} te
         contacte por el medio que elegiste (correo electrónico, o llamada o WhatsApp) sobre tu solicitud, conforme a
         este aviso. La autorización se limita a esa solicitud.
       </p>

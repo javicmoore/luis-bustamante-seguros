@@ -29,7 +29,7 @@ export const faqs = [
     id: 'despues-formulario',
     question: '¿Qué pasa después de enviar el formulario?',
     answer: [
-      'Tu solicitud le llega a Luis con los datos que compartiste. Después, él podrá contactarte por el medio que elegiste (correo o teléfono) para conocer lo que necesitas.',
+      'Se abre WhatsApp con un mensaje para Luis con los datos que compartiste; le llega cuando tú lo envías. Después, él podrá contactarte por el medio que elegiste (correo o teléfono) para conocer lo que necesitas.',
       'Enviar el formulario no te compromete a contratar nada, y tus datos se usan solo para atender esta solicitud.',
     ],
   },

@@ -9,9 +9,6 @@ export const privacy = {
     address: null, // domicilio para efectos del aviso
     rightsContact: null, // medio para ejercer derechos ARCO y revocar el consentimiento
   },
-  // Días que se conserva el registro mínimo de la solicitud web (debe coincidir con
-  // LEAD_RETENTION_DAYS en el servidor).
-  retentionDays: 30,
 };
 
 export function isPrivacyFinal(p = privacy) {
