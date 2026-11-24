@@ -81,12 +81,18 @@ test.describe('estructura y contenido', () => {
     }
   });
 
-  test('aviso de privacidad: ruta directa, borrador identificado y noindex', async ({ page }) => {
+  test('aviso de privacidad: ruta directa, versión final con los datos confirmados e indexable', async ({ page }) => {
     const res = await open(page, '/aviso-de-privacidad');
     expect(res.status()).toBe(200);
     await expect(page.getByRole('heading', { level: 1, name: 'Aviso de privacidad' })).toBeVisible();
-    await expect(page.getByText('Borrador pendiente de revisión.')).toBeVisible();
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+    const content = page.locator('.privacy-content');
+    await expect(content.locator('.privacy-draft, .privacy-pending')).toHaveCount(0);
+    await expect(content).toContainText('Luis Bustamante, agente de seguros y asesor financiero, con domicilio en Mexicali, Baja California, C.P. 21290');
+    await expect(content).toContainText('WhatsApp al +52 686 387 2193');
+    await expect(content).toContainText('20 días hábiles');
+    await expect(content).not.toContainText(/Upstash|Twilio/);
+    await expect(content.locator('ol li')).toHaveCount(5);
+    await expect(page.locator('meta[name="robots"][content*="noindex"]')).toHaveCount(0);
   });
 
   test('ruta inexistente responde 404 con página propia', async ({ page }) => {

@@ -6,7 +6,9 @@
 export const launchChecklist = [
   {
     id: 'testimonios-autorizacion',
-    done: false,
+    // 23 nov 2026: Javier confirmó por escrito que Karla G., Sergio C. y Alberto G. enviaron sus testimonios y
+    // autorizaron publicarlos con ese nombre y contexto.
+    done: true,
     label:
       'Constancia escrita de que Karla G., Sergio C. y Alberto G. autorizan publicar su testimonio con ese nombre y contexto (ver src/content/testimonials.js).',
   },

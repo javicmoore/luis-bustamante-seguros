@@ -53,9 +53,10 @@ firma de callbacks).
 - Las rutas `/api/*` ya no existen: responden 404 (prueba E2E en el servidor local).
 
 ### Indexación
-- Con `SITE_MODE=demo` (activo en Vercel): `noindex, nofollow` en todas las páginas y `robots.txt` con
-  `Disallow: /`, sin canonical ni sitemap.
-- El aviso de privacidad en borrador lleva `noindex` aunque se quite el modo demo.
+- Producción (desde el 23 nov 2026): sin modo demo, indexable, con canonical y sitemap hacia `SITE_URL`.
+- Con `SITE_MODE=demo`: `noindex, nofollow` en todas las páginas y `robots.txt` con `Disallow: /`, sin
+  canonical ni sitemap.
+- Si el aviso de privacidad volviera a borrador, su página lleva `noindex`.
 
 ## Comprobaciones realizadas (con evidencia, 21 nov 2026)
 
@@ -73,7 +74,7 @@ firma de callbacks).
    headers (incluido HSTS). Comprobar con `curl -I` en `/`, `/aviso-de-privacidad` y una ruta inexistente.
 2. **Teléfono físico**: abrir WhatsApp depende del dispositivo (app instalada o WhatsApp Web, bloqueador de
    ventanas). Hay un enlace de respaldo "¿No se abrió? Abrir WhatsApp". Falta probarlo en iOS y Android.
-3. **Aviso de privacidad en borrador** (sin datos del responsable ni revisión legal).
+3. **Aviso de privacidad**: final con los datos confirmados por Javier; no consta revisión de un abogado.
 4. **Dependencias**: revisar `npm audit` periódicamente. Las alertas de picomatch (solo desarrollo) que
    seguían abiertas el 17 nov 2026 ya no aparecen; no se usó `npm audit fix --force`.
 5. **Vistas previas de Vercel**: mantener *Deployment Protection*.

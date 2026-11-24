@@ -1,13 +1,13 @@
-// Datos del aviso de privacidad. BORRADOR: faltan datos del responsable y revisión legal.
-// No inventar nombre legal, domicilio ni medio de contacto para derechos ARCO.
+// Datos del aviso de privacidad. No inventar nombre legal, domicilio ni medio de contacto para derechos ARCO.
+// 23 nov 2026: datos confirmados por Javier (responsable, domicilio visible y medio ARCO). El texto lo aprobó
+// Javier; no consta revisión de un abogado.
 export const privacy = {
-  // Cambiar a 'final' solo cuando los datos estén completos y el texto haya sido revisado.
-  status: 'borrador',
-  updatedAt: null, // 'AAAA-MM-DD' de la versión final
+  status: 'final',
+  updatedAt: '2026-11-23', // 'AAAA-MM-DD' de la versión vigente
   responsible: {
-    legalName: null, // nombre legal completo del responsable
-    address: null, // domicilio para efectos del aviso
-    rightsContact: null, // medio para ejercer derechos ARCO y revocar el consentimiento
+    legalName: 'Luis Bustamante', // responsable confirmado por Javier
+    address: 'Mexicali, Baja California, C.P. 21290', // domicilio visible confirmado (sin calle, número ni colonia)
+    rightsContact: 'WhatsApp al +52 686 387 2193', // Luis atiende personalmente las solicitudes ARCO
   },
 };
 

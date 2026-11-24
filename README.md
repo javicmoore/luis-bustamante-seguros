@@ -6,9 +6,9 @@ para todo México. React 19 + Vite 8 y HTML prerenderizado; sitio estático, sin
 El formulario prepara en el navegador un mensaje para el WhatsApp de Luis y lo abre en una pestaña nueva; la
 persona lo revisa y decide si lo envía. No hay API, base de datos ni credenciales.
 
-> **Estado: versión de trabajo, publicada como demo (`SITE_MODE=demo`, `noindex`).** Faltan la constancia de
-> autorización de los testimonios, datos del aviso de privacidad, dominio y aprobación de textos. Ver
-> [`docs/PENDIENTES.md`](docs/PENDIENTES.md) o ejecutar `npm run check:release`.
+> **Estado: publicada en producción el 23 nov 2026** en https://luis-bustamante-seguros-7vt9-one.vercel.app (sin modo demo). Falta conectar el dominio
+> propio; al hacerlo, actualizar `SITE_URL`. Ver [`docs/PENDIENTES.md`](docs/PENDIENTES.md) o ejecutar
+> `npm run check:release`.
 
 ## Qué incluye
 
@@ -77,7 +77,8 @@ docs/                Pendientes, demo, seguridad y registro de QA
   `site.logo`. Para otra foto: `npm run images -- ruta/foto.jpg --name nombre`.
 - Marcas: `src/content/brands.js`. Originales en `assets-originales/logos-marcas/`; copias web con `npm run logos`.
 - Video y testimonios: `src/content/media.js` y `src/content/testimonials.js`.
-- Aviso de privacidad: `src/content/privacy.js` (borrador hasta completar datos y revisión legal).
+- Aviso de privacidad: datos del responsable en `src/content/privacy.js`; texto en
+  `src/components/Privacy/PrivacyContent.jsx`.
 - Favicon, íconos e imagen social: `npm run brand:assets` (isotipo, logo y foto reales; requiere Playwright
   Chromium).
 
@@ -88,8 +89,8 @@ navegador). Lista en [`.env.example`](.env.example).
 
 | Variable | Para qué |
 | --- | --- |
-| `SITE_MODE=demo` | Demo de revisión: vista previa del mensaje en vez de abrir WhatsApp, aviso visible y `noindex` (activa hoy) |
-| `SITE_URL` | Al tener dominio: canonical, og:url, og:image y sitemap |
+| `SITE_MODE=demo` | Demo de revisión: vista previa del mensaje en vez de abrir WhatsApp, aviso visible y `noindex` (retirada de Production el 23 nov 2026) |
+| `SITE_URL` | Canonical, og:url, og:image y sitemap. Hoy: la URL de producción de Vercel; cambiarla al conectar el dominio propio |
 | `RELEASE_CHECK=warn` | Decisión explícita de desplegar producción con pendientes |
 
 ## Git y GitHub

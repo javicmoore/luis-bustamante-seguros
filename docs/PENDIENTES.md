@@ -55,17 +55,14 @@ confirme.
 
 ## 4. Aviso de privacidad
 
-Está en **borrador** (con marcas `[Pendiente: …]` visibles y `noindex`). En `src/content/privacy.js` faltan:
+Final desde el 23 de noviembre de 2026 (`src/content/privacy.js`, `status: 'final'`), con datos confirmados por
+Javier: responsable Luis Bustamante; domicilio visible "Mexicali, Baja California, C.P. 21290" (sin calle, número
+ni colonia, por decisión de Javier); solicitudes ARCO que Luis atiende personalmente por WhatsApp al
++52 686 387 2193, con identificación por videollamada y plazos de 20 y 15 días hábiles. Las conversaciones se usan
+para responder y agendar; no se promete una fecha de borrado.
 
-- Nombre legal completo del responsable.
-- Domicilio para efectos del aviso.
-- Medio para ejercer derechos ARCO y revocar el consentimiento, con procedimiento y plazos.
-- Plazo de conservación de las conversaciones de WhatsApp una vez que Luis atiende la solicitud.
-- Confirmación de proveedores (Vercel como alojamiento; WhatsApp/Meta para los mensajes) y revisión legal.
-
-El texto ya describe el flujo de WhatsApp (aprobado el 23 nov 2026). Faltan solo los datos de arriba.
-
-Al terminar: `status: 'final'` y `updatedAt: 'AAAA-MM-DD'`.
+Recomendado (no bloquea): revisión por un abogado, en particular del domicilio completo, del nombre legal completo
+y de las referencias a plazos y autoridad tras la reforma de 2025 a la ley de datos personales.
 
 ## 5. Configuración externa
 
@@ -73,10 +70,10 @@ El formulario prepara el mensaje de WhatsApp en el navegador (flujo definitivo d
 servidor, almacenamiento ni credenciales que configurar. Se retiraron `/api/leads`, `/api/twilio-status`,
 Twilio y Upstash.
 
-- **Dominio definitivo** → `SITE_URL=https://…` en Vercel (activa canonical, `og:url`, `og:image` absoluta y
-  sitemap).
-- **Indexación**: hoy `SITE_MODE=demo` pone `noindex` en todo el sitio y `robots.txt` con `Disallow: /`.
-  Quitarlo solo para el lanzamiento, con el dominio, el aviso de privacidad final y los textos aprobados.
+- **Dominio propio** (pendiente): hoy `SITE_URL=https://luis-bustamante-seguros-7vt9-one.vercel.app` en Production. Al conectar el dominio en
+  Vercel → Domains, cambiar `SITE_URL` y redeplegar (canonical, `og:url`, `og:image` y sitemap se regeneran).
+- **Indexación**: `SITE_MODE=demo` se quitó de Production el 23 nov 2026; el sitio es indexable (`robots.txt`
+  con `Allow: /` y sitemap).
 - **Variables antiguas**: si en Vercel quedaron credenciales de Twilio o Upstash, borrarlas y revocarlas.
 - **Medición**: no se instaló ninguna herramienta. Si se decide usar una, ver "Medición" en el README.
 - **Colores**: acentos ajustados al logo real (cobre #C88040, azul acero #385870) sobre el azul #102A43.
@@ -86,7 +83,7 @@ Twilio y Upstash.
 Marcar en `src/content/launch.js` solo con evidencia. Las de fase `post-deploy` solo se comprueban con el sitio
 publicado: el build de Vercel las avisa sin detenerse y se registran en cuanto termina el despliegue.
 
-- [ ] Constancia escrita de los testimonios.
+- [x] Autorización de los testimonios (confirmada por Javier el 23 nov 2026).
 - [x] Headers reales en landing, aviso y 404 (23 nov 2026, URL de producción de Vercel).
 - [x] HTTPS y redirección desde HTTP (23 nov 2026, 308 a https).
 - [ ] Indexación (tras desplegar): sin `noindex`, `robots.txt` permite rastrear y, con `SITE_URL`, canonical y sitemap.

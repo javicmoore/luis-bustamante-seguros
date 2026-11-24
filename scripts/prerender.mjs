@@ -69,7 +69,7 @@ for (const { page, file } of pages) {
   console.log(`[prerender] ${file} (${(Buffer.byteLength(html) / 1024).toFixed(1)} KB)`);
 }
 
-const robots = demo ? ['User-agent: *', 'Disallow: /'] : ['User-agent: *', 'Allow: /', 'Disallow: /api/'];
+const robots = demo ? ['User-agent: *', 'Disallow: /'] : ['User-agent: *', 'Allow: /'];
 if (demo) console.log('[prerender] SITE_MODE=demo: noindex en todas las páginas y robots.txt con Disallow: /');
 if (siteUrl) robots.push('', `Sitemap: ${siteUrl}/sitemap.xml`);
 await writeFile(resolve(dist, 'robots.txt'), `${robots.join('\n')}\n`);

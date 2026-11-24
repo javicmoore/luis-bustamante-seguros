@@ -22,6 +22,24 @@
   margin-top: 0.75rem;
 }
 
+/* Pasos del procedimiento ARCO: numerados, con la tipografía de los párrafos. */
+.privacy-content ol {
+  max-width: 68ch;
+  margin-top: 0.75rem;
+  padding-left: 1.4rem;
+  list-style: decimal;
+  line-height: 1.7;
+  color: var(--slate-600);
+}
+
+.privacy-content li + li {
+  margin-top: 0.5rem;
+}
+
+.privacy-content li strong {
+  color: var(--navy-900);
+}
+
 .privacy-draft {
   padding: 0.9rem 1.1rem;
   border: 1px solid #ecd9ae;

@@ -5,8 +5,8 @@
 //   name: tal como el cliente autorizó mostrarlo (p. ej. nombre e inicial del apellido).
 //   quote: palabras del cliente sin cambios, separadas en párrafos por idea (sin saltos forzados).
 //
-// Entregados por Javier el 19 de octubre de 2026 para publicarse. La constancia escrita de
-// autorización de cada cliente sigue pendiente en src/content/launch.js.
+// Entregados por Javier el 19 de octubre de 2026 para publicarse. El 23 de noviembre de 2026 Javier confirmó
+// por escrito que cada cliente envió su testimonio y autorizó publicarlo con ese nombre y contexto.
 export const testimonials = [
   {
     id: 'karla-g',
@@ -18,7 +18,7 @@ export const testimonials = [
       'Agradezco a Luis por explicarme todo de manera clara y puntual.”',
     ],
     authorized: true,
-    authorizationRef: 'Entregado por Javier (19 oct 2026); constancia escrita pendiente.',
+    authorizationRef: 'El cliente envió su testimonio y autorizó publicarlo; confirmado por Javier el 23 nov 2026.',
   },
   {
     id: 'sergio-c',
@@ -29,7 +29,7 @@ export const testimonials = [
       'Desde el principio, Luis me explicó cómo funciona y qué aspectos debía considerar antes de tomar una decisión.”',
     ],
     authorized: true,
-    authorizationRef: 'Entregado por Javier (19 oct 2026); constancia escrita pendiente.',
+    authorizationRef: 'El cliente envió su testimonio y autorizó publicarlo; confirmado por Javier el 23 nov 2026.',
   },
   {
     id: 'alberto-g',
@@ -41,7 +41,7 @@ export const testimonials = [
       'Ahora todo lo que ahorro tiene un para qué.”',
     ],
     authorized: true,
-    authorizationRef: 'Entregado por Javier (19 oct 2026); constancia escrita pendiente.',
+    authorizationRef: 'El cliente envió su testimonio y autorizó publicarlo; confirmado por Javier el 23 nov 2026.',
   },
 ];
 
