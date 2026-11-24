@@ -23,7 +23,10 @@ export const launchChecklist = [
   {
     id: 'indexacion',
     phase: 'post-deploy',
-    done: false,
+    // 23 nov 2026, producción (3b0f49e) en https://luis-bustamante-seguros-7vt9-one.vercel.app: sin noindex en el
+    // HTML ni en X-Robots-Tag, robots.txt con Allow: / y Sitemap, sitemap.xml con / y /aviso-de-privacidad, canonical
+    // hacia SITE_URL. Al conectar el dominio propio, actualizar SITE_URL y volver a comprobar.
+    done: true,
     label:
       'Indexación decidida para el lanzamiento: sin SITE_MODE=demo, el sitio pierde el noindex. Confirmar dominio, canonical, sitemap y robots.txt antes de quitarlo.',
   },

@@ -86,6 +86,6 @@ publicado: el build de Vercel las avisa sin detenerse y se registran en cuanto t
 - [x] Autorización de los testimonios (confirmada por Javier el 23 nov 2026).
 - [x] Headers reales en landing, aviso y 404 (23 nov 2026, URL de producción de Vercel).
 - [x] HTTPS y redirección desde HTTP (23 nov 2026, 308 a https).
-- [ ] Indexación (tras desplegar): sin `noindex`, `robots.txt` permite rastrear y, con `SITE_URL`, canonical y sitemap.
+- [x] Indexación (23 nov 2026, producción): sin `noindex`, `robots.txt` con `Allow: /`, sitemap y canonical hacia `SITE_URL`.
 - [ ] Teléfono físico (tras desplegar): "Enviar por WhatsApp" abre el chat de Luis con el mensaje correcto, sin
   enviarlo solo, y al volver los datos siguen ahí.
