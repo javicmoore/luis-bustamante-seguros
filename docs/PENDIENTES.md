@@ -46,20 +46,12 @@ Integradas el 3 de octubre de 2026 con los logos entregados por Javier en `asset
 "Marcas con las que trabajo". Las copias web están en `public/brands/` y se regeneran con `npm run logos`
 (solo se recorta el margen transparente). Para agregar o quitar marcas: `src/content/brands.js`.
 
-## 3. Textos por validar con Luis
+## 3. Textos
 
-Listados en `src/content/review.js` (cambiar `status` a `'aprobado'` cuando Luis los confirme o ajustarlos):
-
-- Título y descripción del hero.
-- Beneficios y descripción de cada familia de servicios.
-- Párrafo sobre su forma de trabajar ("Sobre Luis").
-- Título del formulario, texto de autorización y nota breve de privacidad.
-- FAQ: atención a distancia por teléfono o WhatsApp; el costo del producto se revisa antes de decidir; qué pasa
-  al enviar el formulario (debe decir que se abre WhatsApp y el mensaje llega cuando la persona lo envía; hay
-  una propuesta sin publicar en el árbol de trabajo); revisión de seguros o ahorros que ya se tienen; información sugerida.
-
-Datos ya confirmados y usados: nombre, actividad, Mexicali, alcance nacional, teléfono/WhatsApp
-686 387 2193, Instagram, servicios y cotización/asesoría gratuitas.
+Aprobados el 23 de noviembre de 2026: Javier confirmó que todo el contenido de la página está aprobado
+(`src/content/review.js`, todos en `aprobado`), incluidos el texto del aviso de privacidad y la respuesta de la FAQ
+que describen el flujo de WhatsApp. Si un texto cambia después, volver a marcarlo como `pendiente` hasta que se
+confirme.
 
 ## 4. Aviso de privacidad
 
@@ -71,10 +63,7 @@ Está en **borrador** (con marcas `[Pendiente: …]` visibles y `noindex`). En `
 - Plazo de conservación de las conversaciones de WhatsApp una vez que Luis atiende la solicitud.
 - Confirmación de proveedores (Vercel como alojamiento; WhatsApp/Meta para los mensajes) y revisión legal.
 
-El texto publicado todavía describe el envío retirado (registro en Upstash, aviso por Twilio, IP seudonimizada y
-conservación de 30 días). Hay una versión que describe el flujo de WhatsApp en el árbol de trabajo
-(`src/components/Privacy/PrivacyContent.jsx`), sin publicar hasta que Javier y Luis la aprueben junto con los
-datos de arriba.
+El texto ya describe el flujo de WhatsApp (aprobado el 23 nov 2026). Faltan solo los datos de arriba.
 
 Al terminar: `status: 'final'` y `updatedAt: 'AAAA-MM-DD'`.
 
@@ -94,12 +83,12 @@ Twilio y Upstash.
 
 ## 6. Verificaciones antes del lanzamiento
 
-Marcar en `src/content/launch.js` solo con evidencia:
+Marcar en `src/content/launch.js` solo con evidencia. Las de fase `post-deploy` solo se comprueban con el sitio
+publicado: el build de Vercel las avisa sin detenerse y se registran en cuanto termina el despliegue.
 
 - [ ] Constancia escrita de los testimonios.
-- [ ] Headers reales comprobados en landing, aviso y 404 (`curl -I https://dominio/…`).
-- [ ] Indexación decidida: dominio, canonical, sitemap y `robots.txt` listos antes de quitar `SITE_MODE=demo`.
-- [ ] HTTPS y redirección desde HTTP en el dominio final.
-- [ ] Recorrido completo en al menos un teléfono físico (iOS y/o Android), incluido el formulario: "Enviar por
-  WhatsApp" abre el chat de Luis con el mensaje correcto, sin enviarlo solo, y al volver los datos siguen ahí
-  (ver `docs/QA-RENDIMIENTO.md`).
+- [x] Headers reales en landing, aviso y 404 (23 nov 2026, URL de producción de Vercel).
+- [x] HTTPS y redirección desde HTTP (23 nov 2026, 308 a https).
+- [ ] Indexación (tras desplegar): sin `noindex`, `robots.txt` permite rastrear y, con `SITE_URL`, canonical y sitemap.
+- [ ] Teléfono físico (tras desplegar): "Enviar por WhatsApp" abre el chat de Luis con el mensaje correcto, sin
+  enviarlo solo, y al volver los datos siguen ahí.

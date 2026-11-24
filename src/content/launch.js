@@ -1,5 +1,8 @@
 // Verificaciones manuales previas al lanzamiento. Solo marcar `true` con evidencia real
-// (no por suposición). `npm run check:release` y el build de producción en Vercel las exigen.
+// (no por suposición). `npm run check:release` las exige todas.
+// phase: 'post-deploy' → solo se pueden comprobar con el sitio publicado (URL de producción). El build de
+// Vercel las reporta como pendientes tras desplegar, sin detenerse; se comprueban en cuanto se publica y se
+// registran aquí con su evidencia.
 export const launchChecklist = [
   {
     id: 'testimonios-autorizacion',
@@ -9,22 +12,30 @@ export const launchChecklist = [
   },
   {
     id: 'headers-dominio',
-    done: false,
+    phase: 'post-deploy',
+    // 23 nov 2026, https://luis-bustamante-seguros-7vt9-one.vercel.app (curl -I en /, /aviso-de-privacidad y una
+    // ruta inexistente con 404): CSP, nosniff, Referrer-Policy, Permissions-Policy, X-Frame-Options, COOP y HSTS.
+    done: true,
     label: 'Headers reales (CSP, nosniff, referrer, permisos, frame-ancestors, HSTS) comprobados en landing, aviso y 404.',
   },
   {
     id: 'indexacion',
+    phase: 'post-deploy',
     done: false,
     label:
       'Indexación decidida para el lanzamiento: sin SITE_MODE=demo, el sitio pierde el noindex. Confirmar dominio, canonical, sitemap y robots.txt antes de quitarlo.',
   },
   {
     id: 'https-redireccion',
-    done: false,
+    phase: 'post-deploy',
+    // 23 nov 2026: http:// responde 308 a https:// en la URL de producción de Vercel; todos los recursos son del
+    // propio origen (CSP default-src 'self').
+    done: true,
     label: 'HTTPS y redirección desde HTTP verificados en el dominio final, sin recursos mixtos.',
   },
   {
     id: 'telefono-fisico',
+    phase: 'post-deploy',
     done: false,
     label:
       'Recorrido completo probado en al menos un teléfono físico (iOS y/o Android), incluido el formulario: "Enviar por WhatsApp" abre el chat de Luis con el mensaje correcto, sin enviarlo solo, y al volver los datos siguen en el formulario.',

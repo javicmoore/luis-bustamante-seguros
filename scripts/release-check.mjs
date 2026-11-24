@@ -90,7 +90,10 @@ for (const item of copyReview.filter((c) => c.status !== 'aprobado')) {
 }
 
 for (const item of launchChecklist.filter((c) => !c.done)) {
-  blockers.push(`Verificación pendiente — ${item.label}`);
+  // En el build de Vercel, lo que solo se comprueba con el sitio publicado no puede bloquear su propia
+  // publicación: se avisa y se verifica en cuanto el despliegue termina. En local sigue bloqueando.
+  if (vercelMode && item.phase === 'post-deploy') warnings.push(`Verificar tras desplegar — ${item.label}`);
+  else blockers.push(`Verificación pendiente — ${item.label}`);
 }
 
 if (!existsSync(resolve(pub, 'og/og-default.png'))) warnings.push('Falta la imagen social (public/og/og-default.png).');
